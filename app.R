@@ -1,3 +1,4 @@
+
 rm(list=ls())
 
 ################################################################################
@@ -23,7 +24,7 @@ library(graphics)
 source("help_functions.R")
 
 # load SE with fixed name
-load("SE.Rdata")
+#load("SE.Rdata")
 
 # extract object names from result SE 'D'
 
@@ -72,6 +73,35 @@ ui <- fluidPage(
                 windowTitle = "Maplet"),
     # sticky tabs while scrolling main panel
     position = c("fixed-top"), 
+     
+    # Define layout of Uploading Data(coded as mod0) ----------------------------------------------------
+    
+    tabPanel(HTML(paste("Upload", "Data", sep = "<br/>")), 
+             sidebarLayout(
+               sidebarPanel(id = "mod0_panel1",
+                            # sidebar autoscroll with main panel
+                            style = "margin-left: -25px; margin-top: 45px; margin-bottom: 5px; position:fixed; width: 20%; height: 100%;",
+                            
+                            
+                            fileInput("file", "Upload Excel File", accept = c(".xlsx", ".xls")), br(),
+                            
+                            br(),
+                            tags$p(
+                              HTML("<b>Hint:<br></b>Outputs are delayed untill you click 'Upload' button after selection."
+                              )),
+                            br(),
+                            # delay the output
+                            actionButton("mod0_go", "Upload")
+               ), 
+               mainPanel(id = "mod0_panel2", 
+                         br(), 
+                         br(), 
+                         br(), 
+                         style = "overflow-y: auto; position: absolute; left: 25%",
+                         uiOutput("mod0_sheet_dropdowns")
+               )
+             )
+    ),
     
     # Define layout of Module-Real-Time Pipeline(coded as mod6) ----------------------------------------------------
     tabPanel(HTML(paste("Real-Time", "Pipeline", sep = "<br/>")), 
@@ -182,7 +212,7 @@ ui <- fluidPage(
                      br(),
                      br(),
                      #uiOutput("mod6_main_panel1"),
-                    # br(),
+                     # br(),
                      #br(),
                      #fluidRow(column(width = 12, uiOutput("mod6_main_panel")))
                      uiOutput("mod6_main_panel")
@@ -246,7 +276,7 @@ ui <- fluidPage(
                          tags$p(HTML("Sample coloring column:")),
                          uiOutput("mod2_pre_sample_color_column"),
                          
-                        
+                         
                          tags$p(HTML("Run to see the plots. This step may cost a few seconds to run.")),
                          actionButton("mod2_go_missingness", "Run", width = "110px")
                      ),
@@ -254,7 +284,7 @@ ui <- fluidPage(
                      tags$hr(),
                      
                      
-                    
+                     
                      box(solidHeader = T, collapsible = T, collapsed = T,
                          title="Imputation", width = "220px",
                          
@@ -311,7 +341,7 @@ ui <- fluidPage(
     ),
     
     
-   
+    
     
     # Define layout of Module-Annotations Explorer(coded as mod5) ----------------------------------------------------
     tabPanel(HTML(paste("Annotations", "Explorer", sep = "<br/>")), 
@@ -550,6 +580,104 @@ server <- function(input, output,session) {
   pimpute_list <- reactiveValues()
   pnorm_list <- reactiveValues()
   pheatmap_list <- reactiveValues()
+  
+  # Define rendering logic of uploading data in Module-Upload Data (coded as mod0)
+  
+  categories <- reactiveValues(sheet1 = "assay", sheet2 = "assay", sheet3 = "assay")
+  sheet_list <- reactiveVal()
+  
+  observeEvent(input$file, {
+    # Read the uploaded Excel file
+    file <- input$file$datapath
+    sheets <- excel_sheets(file)
+    
+    # Create a named list to store sheet names and their corresponding category
+    sheet_list(lapply(sheets, function(sheet) {
+      name <- paste0("category_", sheet)
+      dropdown_id <- paste0("dropdown_", sheet)
+      input_id <- paste0("input_", sheet)
+      output_id <- paste0("output_", sheet)
+      
+      list(
+        sheet_name = sheet,
+        #dropdown_id = dropdown_id,
+        input_id = input_id,
+        output_id = output_id,
+        category = reactiveVal("data")  # Initialize with a default value
+      )
+    }))
+    
+    # Reset the selected categories when a new file is uploaded
+    categories$sheet1 <- "data"
+    categories$sheet2 <- "data"
+    categories$sheet3 <- "data"
+  })
+  
+  output$mod0_sheet_dropdowns <- renderUI({
+    dropdowns <- c("assay", "row", "col")
+    file <- input$file$datapath
+    sheets <- excel_sheets(file)
+    
+    # Generate dropdown menus for each category
+    ui_list <- lapply(dropdowns, function(dropdown) {
+      selectInput(
+        inputId = paste0("dropdown_", dropdown),
+        label = paste("Choose", dropdown),
+        choices = sheets
+      )
+    })
+    
+    do.call(tagList, ui_list)
+    
+  })
+  
+  observeEvent(input$mod0_go, {
+    sheet_list <- sheet_list()
+    
+    selected_data_sheet <- input$dropdown_assay
+      
+    
+    selected_row_data_sheet <- input$dropdown_row
+    
+    selected_col_data_sheet <- input$dropdown_col
+    
+    print(sheet_list)
+    
+    print(selected_data_sheet)  # Debugging print statement
+    print(selected_row_data_sheet)  # Debugging print statement
+    print(selected_col_data_sheet)  # Debugging print statement
+    
+    D <- mt_load_se_xls(file=input$file$datapath, sheet_names=c(selected_data_sheet, selected_row_data_sheet, selected_col_data_sheet))
+    #mt_write_se_xls(D,"output.xls")
+    #print(assay(D))
+    print(class(D))
+    #D <- mt_load_xls(file = input$file$datapath, sheet = selected_data_sheet[[1]], samples_in_row = TRUE, id_col = "sample") %>%
+    #  mt_anno_xls(file = input$file$datapath, sheet = selected_row_data_sheet[[1]], anno_type = "features", anno_id_col = "name", data_id_col = "name") %>%
+    #  mt_anno_xls(file = input$file$datapath, sheet = selected_col_data_sheet[[1]], anno_type = "samples", anno_id_col = "sample", data_id_col = "sample") %>%
+    #  mt_reporting_data() %>% 
+    #  mt_reporting_tic() %>%
+    #  {.}
+    #print(D)  # Debugging print statement
+    
+    # Display the selected sheets and their categories
+    #cat("Selected Data Sheet:", selected_data_sheet, "\n")
+    #cat("Selected Row Data Sheet:", selected_row_data_sheet, "\n")
+    #cat("Selected Column Data Sheet:", selected_col_data_sheet, "\n")
+    #cat("Summarized experiment created", assays(D))
+  })
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   # Define rendering logic of control widgets in Module-Real-Time Pipeline (coded as mod6)----------------------
   # control widget of selecting file
   
@@ -558,7 +686,7 @@ server <- function(input, output,session) {
   
   # Define rendering logic of outputs in Module-Real-Time Pipeline(coded as mod6) ------------------------------
   
- 
+  
   
   output$mod6_pre_sample_color_column <- renderUI({
     selectInput("pre_sample_color_column", label = NULL,
@@ -645,7 +773,7 @@ server <- function(input, output,session) {
             
             plotname <- paste("Plot", i,j, sep="")
             #print(paste0("The value of my variable from UI is ", plotname))
-           
+            
             plotOutput(plotname)
             
           })
@@ -654,36 +782,36 @@ server <- function(input, output,session) {
         
       })
       
-    
+      
       do.call(tagList, mod6_output_plotlist)
-     
+      
       
     })
     
     lapply(1: pl_list$length, function(i){
       local({
-     
-         len_j <- length(pl_list$value[[i]])
-         
-         lapply(1:(len_j), function(j) {
+        
+        len_j <- length(pl_list$value[[i]])
+        
+        lapply(1:(len_j), function(j) {
           
-         plotname <- paste("Plot", i,j, sep="")
-             
-         output[[paste("Plot", i,j, sep="")]] <-
-               renderPlot({
-                 #grid.force()
-                 pl_list$value[[i]][j]
-                 
-               })
-         })
-     })
-  
-  })
+          plotname <- paste("Plot", i,j, sep="")
+          
+          output[[paste("Plot", i,j, sep="")]] <-
+            renderPlot({
+              #grid.force()
+              pl_list$value[[i]][j]
+              
+            })
+        })
+      })
+      
+    })
     
- })   
-   
+  })   
   
- 
+  
+  
   
   observeEvent(input$mod6_go_differ,{
     # define main panel of differential analysis
@@ -718,7 +846,7 @@ server <- function(input, output,session) {
       
       do.call(tagList, mod6_output_plotlist)
       
-     })
+    })
     
     lapply(1: pdiffer_list$length, function(i){
       local({
@@ -740,7 +868,7 @@ server <- function(input, output,session) {
       
     })
     
- })
+  })
   
   
   # get proprocessing SE
@@ -820,7 +948,7 @@ server <- function(input, output,session) {
   
   
   session_store <- reactiveValues()
-
+  
   
   # render logic of the log text of differential analysis
   output$log_differ <- renderPrint({
@@ -836,7 +964,7 @@ server <- function(input, output,session) {
   })
   
   
-
+  
   
   
   # Define rendering logic of outputs in Module-Pre-processing (coded as mod2) ------------------------------
@@ -853,7 +981,7 @@ server <- function(input, output,session) {
   
   
   
- 
+  
   
   output$mod2_group_col_barplot <- renderUI({
     selectInput("group_col_barplot_mod2", label = NULL,
@@ -884,55 +1012,55 @@ server <- function(input, output,session) {
     
   })
   
-
+  
   output$mod2_dimension_ui_norm <- renderUI({
     switch(input$mod2_norm_type,
            "probabilistic quotient"= list(tags$p(HTML("Max % missingness per feature (normalization):")),
                                           numericInput("mod2_norm_feat_max", label = NULL,
-                                                                                value = 50,
-                                                                                min = 0,
-                                                                                max = 100,
-                                                                                step = 5,
-                                                                                width = "220px"),
-
+                                                       value = 50,
+                                                       min = 0,
+                                                       max = 100,
+                                                       step = 5,
+                                                       width = "220px"),
+                                          
                                           tags$p(HTML("Reference sample column:")),
-
-
+                                          
+                                          
                                           renderUI({selectInput("mod2_reference_samp",
-                                                       label = NULL,
-                                                       selected = "GROUP_ID",
-                                                       choices = names(colData(D)),
-                                                       width = "220px"
-                                                      )
-                                            }),
-
-
+                                                                label = NULL,
+                                                                selected = "GROUP_ID",
+                                                                choices = names(colData(D)),
+                                                                width = "220px"
+                                          )
+                                          }),
+                                          
+                                          
                                           tags$p(HTML("Reference column value:")),
                                           renderUI({selectInput("mod2_reference_val", label = NULL,
-                                                      choices = colData(D) %>% as.data.frame() %>%
-                                                      dplyr::select(input$mod2_reference_samp) %>% unique() %>%
-                                                      unlist() %>% as.character(),width = "220px" )
+                                                                choices = colData(D) %>% as.data.frame() %>%
+                                                                  dplyr::select(input$mod2_reference_samp) %>% unique() %>%
+                                                                  unlist() %>% as.character(),width = "220px" )
                                           })
-
-                                          ),
-        "external column" = list(tags$p(HTML("Numeric-value column in colData:")),
-                                 selectInput("mod2_ext_norm",
-                                             label = NULL,
-                                             choices = colData(D) %>% as.data.frame() %>% dplyr::select(where(is.numeric)) %>% names(),
-                                             selected = "GROUP_ID",
-                                             width = "220px"
-                                 )
+                                          
+           ),
+           "external column" = list(tags$p(HTML("Numeric-value column in colData:")),
+                                    selectInput("mod2_ext_norm",
+                                                label = NULL,
+                                                choices = colData(D) %>% as.data.frame() %>% dplyr::select(where(is.numeric)) %>% names(),
+                                                selected = "GROUP_ID",
+                                                width = "220px"
+                                    )
+                                    
+                                    
+           )
+    )
     
-    
-          )
-        )
-
   })
   # Define rendering logic of outputs in Module-Pre-processing(coded as mod2) ------------------------------
   
- 
- 
-
+  
+  
+  
   
   observeEvent(input$mod2_go_missingness,{
     # define main panel for preprocessing section
@@ -992,7 +1120,7 @@ server <- function(input, output,session) {
     
   })   
   
-
+  
   
   # pheatmap_list <- reactiveValues()
   
@@ -1053,7 +1181,7 @@ server <- function(input, output,session) {
     })
     
   })
- 
+  
   observeEvent(input$mod2_go_norm,{
     # define main panel of differential analysis
     # output$mod6_main_panel <- renderUI({
@@ -1128,82 +1256,82 @@ server <- function(input, output,session) {
     
     
     
-   
+    
     ## return D
     D
   })
   
   D_impute <- reactive({ 
     D <- D_missingness()
+    
+    
+    if(input$mod2_impute_type == "Min value"){
       
-     
-     if(input$mod2_impute_type == "Min value"){
-         
       D %<>%
         mt_pre_impute_min() 
-     }else
-     {
-       D %<>%
-         mt_pre_impute_knn(k = input$mod2_k_knn) 
-     }
-       
-     D %<>%
-        mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column_mod2), title = "After imputation", plot_logged = T) %>%
-        mt_pre_outlier_detection_univariate() %>%
-        mt_reporting_data() %>%
-        
-        {.}
+    }else
+    {
+      D %<>%
+        mt_pre_impute_knn(k = input$mod2_k_knn) 
+    }
+    
+    D %<>%
+      mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column_mod2), title = "After imputation", plot_logged = T) %>%
+      mt_pre_outlier_detection_univariate() %>%
+      mt_reporting_data() %>%
       
-      D
-    }) 
+      {.}
+    
+    D
+  }) 
   
   D_norm <- reactive({ 
     
     D <- D_impute()
     if(input$mod2_norm_type == "probabilistic quotient"){
       D %<>%
-      mt_pre_norm_quot(feat_max = (input$mod2_norm_feat_max)/100, ref_samples = (!!sym(input$mod2_reference_samp) == input$mod2_reference_val)) %>%
-      mt_plots_dilution_factor(in_col=input$pre_sample_color_column_mod2) 
+        mt_pre_norm_quot(feat_max = (input$mod2_norm_feat_max)/100, ref_samples = (!!sym(input$mod2_reference_samp) == input$mod2_reference_val)) %>%
+        mt_plots_dilution_factor(in_col=input$pre_sample_color_column_mod2) 
     }else
-       {
-        D %<>%
-           mt_pre_norm_external(col_name=input$mod2_ext_norm)
-       }
+    {
+      D %<>%
+        mt_pre_norm_external(col_name=input$mod2_ext_norm)
+    }
     if(input$mod2_trans_log){
-     
+      
       D %<>%
         mt_pre_trans_log()
     }
     
     D %<>%     
-  
-    mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column_mod2), title = "After normalization", plot_logged = T) %>%
-     {.}
-  
-  D
+      
+      mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column_mod2), title = "After normalization", plot_logged = T) %>%
+      {.}
+    
+    D
   })
   
- 
+  
   D_heatmap <- reactive({ 
     D <- D_norm() %>%
- 
-    mt_plots_heatmap(scale_data = T, annotation_col = input$pre_heatmap_anno_column, annotation_row = input$pre_heatmap_anno_row,
-                     clustering_method = "ward.D2", fontsize = 5, cutree_rows = 3, cutree_cols = 3, color=gplots::bluered(101)) %>%
-    
-    
+      
+      mt_plots_heatmap(scale_data = T, annotation_col = input$pre_heatmap_anno_column, annotation_row = input$pre_heatmap_anno_row,
+                       clustering_method = "ward.D2", fontsize = 5, cutree_rows = 3, cutree_cols = 3, color=gplots::bluered(101)) %>%
+      
+      
       {.}
     
     
     D
   }) 
   
- 
+  
   
   
   session_store <- reactiveValues()
   
   
- 
+  
   
   
   # Define rendering logic of control widgets in Module-Annotations Explorer(coded as mod5) ----------------------
@@ -1485,27 +1613,27 @@ server <- function(input, output,session) {
       ),
       
       "pls"=list(
-      #   numericInput("mod3_pls_n_dim",
-      #                         "Number of dimensions for PLS:",
-      #                         value = 2,
-      #                         width = "220px"
-      # ),
-      
-      selectInput("mod3_select_subgroup", 
-                  "Select one subgroup variable:", 
-                  choices = names(colData(D)),
-                  selected = "GROUP_ID",
-                  width = "220px"
-      ),
-      
-      selectInput("mod3_select_hover", 
-                  "Select hovering text:", 
-                  # choices = setNames(seq_along(colData(D)), names(colData(D))),
-                  choices = names(colData(D)),
-                  selected = "sample",
-                  width = "220px",
-                  multiple=TRUE
-      )
+        #   numericInput("mod3_pls_n_dim",
+        #                         "Number of dimensions for PLS:",
+        #                         value = 2,
+        #                         width = "220px"
+        # ),
+        
+        selectInput("mod3_select_subgroup", 
+                    "Select one subgroup variable:", 
+                    choices = names(colData(D)),
+                    selected = "GROUP_ID",
+                    width = "220px"
+        ),
+        
+        selectInput("mod3_select_hover", 
+                    "Select hovering text:", 
+                    # choices = setNames(seq_along(colData(D)), names(colData(D))),
+                    choices = names(colData(D)),
+                    selected = "sample",
+                    width = "220px",
+                    multiple=TRUE
+        )
       )
     )
   })
@@ -1518,7 +1646,7 @@ server <- function(input, output,session) {
                                         input$mod3_checkbox_factor,
                                         input$mod3_pca_data_type,
                                         input$mod3_umap_n_neighbors
-                                        )}
+                                     )}
   )
   
   
@@ -1544,13 +1672,13 @@ server <- function(input, output,session) {
       )
     } else
       mod3_plots_pls(D = D_norm(),
-                      subgroupvar  = input$mod3_select_subgroup,
+                     subgroupvar  = input$mod3_select_subgroup,
                      # ndim = input$mod3_pls_n_dim,
-                      hover = input$mod3_select_hover
+                     hover = input$mod3_select_hover
                      
-                      
+                     
       )
-      
+    
     session_store$mod3_plotly
   })
   
@@ -1648,26 +1776,26 @@ server <- function(input, output,session) {
     )
   })
   
-
- 
+  
+  
   
   output$mod7_filt_samp_dim <- renderUI({
     
     if(input$mod7_filt_samp)
     {
-           list( 
-             selectInput("mod7_samp_filter", label = "Sample Filter Variable:",
-                         width = "220px",
-                         choices = names(colData(D)),
-                         selected = "GROUP_ID"
-             ),
-          
-             multiInput("mod7_filter_val", label = input$mod7_samp_filter,
-                        choices = colData(D) %>% as.data.frame() %>% dplyr::select(input$mod7_samp_filter) %>% unique() %>% unlist() %>% as.character(),width = "350px"
-                        
-             )
-             
-           )
+      list( 
+        selectInput("mod7_samp_filter", label = "Sample Filter Variable:",
+                    width = "220px",
+                    choices = names(colData(D)),
+                    selected = "GROUP_ID"
+        ),
+        
+        multiInput("mod7_filter_val", label = input$mod7_samp_filter,
+                   choices = colData(D) %>% as.data.frame() %>% dplyr::select(input$mod7_samp_filter) %>% unique() %>% unlist() %>% as.character(),width = "350px"
+                   
+        )
+        
+      )
     }
     
     
@@ -1681,15 +1809,15 @@ server <- function(input, output,session) {
     else
       NULL
   })
-   
   
- 
+  
+  
   
   output$mod7_dimension_ui <- renderUI({
     switch(input$mod7_analysis_type,
            "lm"=list(multiInput("mod7_covar_col_select", 
-                                  label = "Select Covariates from Column Data:", 
-                                  choices = names(colData(D)),width = "350px"),
+                                label = "Select Covariates from Column Data:", 
+                                choices = names(colData(D)),width = "350px"),
                      tags$hr(),
                      multiInput("mod7_covar_row_select", 
                                 label = "Select Covariates from Row Data:", 
@@ -1698,12 +1826,12 @@ server <- function(input, output,session) {
            
            
     )
-   
+    
   })
   
- 
   
- 
+  
+  
   
   output$mod7_group_col_barplot <- renderUI({
     selectInput("group_col_barplot_mod7", label = NULL,
@@ -1724,14 +1852,14 @@ server <- function(input, output,session) {
   # Define rendering logic of outputs in Module-Differential Expression Analysis(coded as mod7) ------------------------------
   
   observeEvent(input$mod7_go_differ,{
-   
+    
     
     pdiffer_list$value <- get_plots_SE_differ(D_differ_tab())
     pdiffer_list$length <-  pdiffer_list$value %>% length()
     
     output$mod7_main_panel  <- renderUI({
       
-    mod7_output_plotlist <-   lapply(1: pdiffer_list$length, function(i){
+      mod7_output_plotlist <-   lapply(1: pdiffer_list$length, function(i){
         local({
           len_j <- length(pdiffer_list$value[[i]])
           lapply(1:(len_j), function(j) {
@@ -1783,16 +1911,16 @@ server <- function(input, output,session) {
     D <- D_norm()  %>%
       mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
       diff_analysis_func_tab(var=input$outcome_mod7,
-                         binary=input$mod7_outcome_binary,
-                         sample_filter = samp_filter(),
-                         filter_val = input$mod7_filter_val,
-                         covar_col_select = input$mod7_covar_col_select,
-                         covar_row_select = input$mod7_covar_row_select,
-                         analysis_type=input$mod7_analysis_type,
-                         mult_test_method=input$mod7_mult_test_method,
-                         alpha=input$mod7_sig_threshold,
-                         group_col_barplot=input$group_col_barplot_mod7,
-                         color_col_barplot=input$color_col_barplot_mod7) %>%
+                             binary=input$mod7_outcome_binary,
+                             sample_filter = samp_filter(),
+                             filter_val = input$mod7_filter_val,
+                             covar_col_select = input$mod7_covar_col_select,
+                             covar_row_select = input$mod7_covar_row_select,
+                             analysis_type=input$mod7_analysis_type,
+                             mult_test_method=input$mod7_mult_test_method,
+                             alpha=input$mod7_sig_threshold,
+                             group_col_barplot=input$group_col_barplot_mod7,
+                             color_col_barplot=input$color_col_barplot_mod7) %>%
       {.}
     ## return D
     D
@@ -1801,7 +1929,7 @@ server <- function(input, output,session) {
   
   
   
- 
+  
   # Define rendering logic of outputs in Module-All Results Explorer(coded as mod1) --------------------------------
   
   # Insert the right number of plot output objects into UI
@@ -1943,7 +2071,7 @@ server <- function(input, output,session) {
   
   
   
-
+  
   
   
 }
