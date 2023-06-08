@@ -1,0 +1,76 @@
+.navbar-brand {
+  height: 60px;
+  line-height: 60px;
+  font-size: 20pt;
+} /* title size*/
+/*center header title vertically by setting line-height the same as height*/
+.navbar-nav {
+  height: 60px;
+  font-size: 16pt;
+} /* tab text */
+
+.navbar-nav li {
+  height: 60px;
+  display: table;
+}
+.navbar-nav li a {
+  height: 60px;
+  display: table-cell;
+  vertical-align: middle;
+  text-align: center;
+}
+.nav-tabs {
+  font-size: 12pt;
+}
+.navbar-header {
+  width: 25%;
+} /* title width*/
+
+/* Main navbar colour: title background*/
+.navbar-default {
+  background-color: #B31B1B;
+    border-color: #ffffff;
+}
+
+/* Hoover colour for navbar buttons*/
+.navbar-default .navbar-nav > li > a:hover,
+.navbar-default .navbar-nav > li > a:focus {
+  color: #ffffff;
+  background-color: #B31B1B;
+}
+
+/* Navbar active button colour*/
+.navbar-default .navbar-nav > .active > a,
+.navbar-default .navbar-nav > .active > a:hover,
+.navbar-default .navbar-nav > .active > a:focus {
+  color: #B31B1B;
+  background-color: #FFFFFF;
+}       
+
+.btn-default {
+  color: #B31B1B;
+  background-color: #dddddd;
+  border-color: #dddddd;
+} /* button color */
+
+/* remove border while active */
+.btn:focus {outline: 0;}
+      
+.well {background-color:#f7f7f7;}   /* sidebarPanel color */
+
+/*center tab vertically*/
+.container-fluid {
+  height: 80px !important;
+}
+
+.leaflet-top .leaflet-control {
+    margin-top: 40px !important;
+}
+
+.navbar-nav li a {
+  height: 80px !important;
+}
+
+.navTitle{
+    line-height: 50px;
+}
