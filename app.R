@@ -98,7 +98,12 @@ ui <- fluidPage(
                          br(), 
                          br(), 
                          style = "overflow-y: auto; position: absolute; left: 25%",
-                         uiOutput("mod0_sheet_dropdowns")
+                         uiOutput("mod0_sheet_dropdowns"),
+                         br(), 
+                         br(), 
+                         br(),
+                         verbatimTextOutput("mod0_assay_display")
+                         
                )
              )
     ),
@@ -649,7 +654,8 @@ server <- function(input, output,session) {
     
     D <- mt_load_se_xls(file=input$file$datapath, sheet_names=c(selected_data_sheet, selected_row_data_sheet, selected_col_data_sheet))
     #mt_write_se_xls(D,"output.xls")
-    #print(assay(D))
+    output$mod0_assay_display <- renderPrint(assay(D))
+    #print(rownames(D))
     print(class(D))
     #D <- mt_load_xls(file = input$file$datapath, sheet = selected_data_sheet[[1]], samples_in_row = TRUE, id_col = "sample") %>%
     #  mt_anno_xls(file = input$file$datapath, sheet = selected_row_data_sheet[[1]], anno_type = "features", anno_id_col = "name", data_id_col = "name") %>%
