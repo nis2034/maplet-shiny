@@ -590,9 +590,12 @@ server <- function(input, output,session) {
   
   categories <- reactiveValues(sheet1 = "assay", sheet2 = "assay", sheet3 = "assay")
   sheet_list <- reactiveVal()
+  D <- reactiveVal(NULL)
+  
   
   observeEvent(input$file, {
     # Read the uploaded Excel file
+    req(input$file)
     file <- input$file$datapath
     sheets <- excel_sheets(file)
     
@@ -646,30 +649,37 @@ server <- function(input, output,session) {
     
     selected_col_data_sheet <- input$dropdown_col
     
+    ### get assay, rowData, and colData matrices ------
+    #df <- as.data.frame(readxl::read_excel(path=input$file$datapath,sheet=selected_data_sheet, col_names=T))
+    #df %<>% tibble::column_to_rownames(colnames(df)[1])
+    #assay <- as.matrix(df)
+    #rd <- as.data.frame(readxl::read_excel(path=input$file$datapath,sheet=selected_row_data_sheet,col_names=T))
+    #rd %<>% tibble::column_to_rownames(colnames(rd)[1])
+    #cd <- as.data.frame(readxl::read_excel(path=input$file$datapath,sheet=selected_col_data_sheet,col_names=T))
+    
+    
+    # Create a SummarizedExperiment object
+    #se_object <- SummarizedExperiment(assay = assay,
+    #                          rowData = rd,
+    #                          colData = cd,
+    #                          metadata = list(sessionInfo=utils::sessionInfo()))
+    
+    
     print(sheet_list)
     
-    print(selected_data_sheet)  # Debugging print statement
-    print(selected_row_data_sheet)  # Debugging print statement
-    print(selected_col_data_sheet)  # Debugging print statement
+    D(mt_load_se_xls(file=input$file$datapath, sheet_names=c(selected_data_sheet, selected_row_data_sheet, selected_col_data_sheet)))
     
-    D <- mt_load_se_xls(file=input$file$datapath, sheet_names=c(selected_data_sheet, selected_row_data_sheet, selected_col_data_sheet))
-    #mt_write_se_xls(D,"output.xls")
-    output$mod0_assay_display <- renderPrint(assay(D))
-    #print(rownames(D))
-    print(class(D))
-    #D <- mt_load_xls(file = input$file$datapath, sheet = selected_data_sheet[[1]], samples_in_row = TRUE, id_col = "sample") %>%
-    #  mt_anno_xls(file = input$file$datapath, sheet = selected_row_data_sheet[[1]], anno_type = "features", anno_id_col = "name", data_id_col = "name") %>%
-    #  mt_anno_xls(file = input$file$datapath, sheet = selected_col_data_sheet[[1]], anno_type = "samples", anno_id_col = "sample", data_id_col = "sample") %>%
-    #  mt_reporting_data() %>% 
-    #  mt_reporting_tic() %>%
-    #  {.}
-    #print(D)  # Debugging print statement
     
-    # Display the selected sheets and their categories
-    #cat("Selected Data Sheet:", selected_data_sheet, "\n")
-    #cat("Selected Row Data Sheet:", selected_row_data_sheet, "\n")
-    #cat("Selected Column Data Sheet:", selected_col_data_sheet, "\n")
-    #cat("Summarized experiment created", assays(D))
+    
+    
+    # Print the row metadata
+    
+    print(names(colData(D())))
+    output$mod0_assay_display <- renderPrint(assay(D()))
+   
+   
+    
+    
   })
   
   
@@ -697,7 +707,7 @@ server <- function(input, output,session) {
   output$mod6_pre_sample_color_column <- renderUI({
     selectInput("pre_sample_color_column", label = NULL,
                 width = "220px",
-                choices = names(colData(D))
+                choices = names(colData(D()))
     )
   })
   
@@ -708,7 +718,7 @@ server <- function(input, output,session) {
                 width = "220px",
                 multiple=TRUE,
                 selected=NULL,
-                choices = names(colData(D))
+                choices = names(colData(D()))
     )
   })
   
@@ -717,7 +727,7 @@ server <- function(input, output,session) {
                 width = "220px",
                 multiple=TRUE,
                 selected=NULL,
-                choices = names(colData(D))
+                choices = names(colData(D()))
     )
   })
   
@@ -726,14 +736,14 @@ server <- function(input, output,session) {
                 width = "220px",
                 multiple=TRUE,
                 selected=NULL,
-                choices = names(rowData(D))
+                choices = names(rowData(D()))
     )
   })
   # control widget of differential analysis
   output$mod6_outcome <- renderUI({
     selectInput("outcome_mod6", label = NULL,
                 width = "220px",
-                choices = names(colData(D))
+                choices = names(colData(D()))
     )
   })
   
@@ -741,7 +751,7 @@ server <- function(input, output,session) {
     selectInput("group_col_barplot_mod6", label = NULL,
                 width = "220px",
                 selected=NULL,
-                choices = names(rowData(D))
+                choices = names(rowData(D()))
     )
   })
   
@@ -749,7 +759,7 @@ server <- function(input, output,session) {
     selectInput("color_col_barplot_mod6", label = NULL,
                 width = "220px",
                 selected=NULL,
-                choices = names(rowData(D))
+                choices = names(rowData(D()))
     )
   })
   
@@ -880,7 +890,7 @@ server <- function(input, output,session) {
   # get proprocessing SE
   D_preprocess <- reactive({
     ## preprocessing D
-    D <- D %>%
+    D <- D() %>%
       mt_reporting_heading(heading = "Preprocessing", lvl=1) %>%
       mt_reporting_heading(heading = "Filtering", lvl = 2) %>%
       mt_plots_missingness(feat_max=(input$mod6_filter_feat_max)/100,samp_max = (input$mod6_filter_sample_max)/100) %>%
@@ -981,7 +991,7 @@ server <- function(input, output,session) {
     selectInput("pre_sample_color_column_mod2", label = NULL,
                 width = "220px",
                 selected = "GROUP_ID",
-                choices = names(colData(D))
+                choices = names(colData(D()))
     )
   })
   
@@ -993,7 +1003,7 @@ server <- function(input, output,session) {
     selectInput("group_col_barplot_mod2", label = NULL,
                 width = "220px",
                 selected=NULL,
-                choices = names(rowData(D))
+                choices = names(rowData(D()))
     )
   })
   
@@ -1001,7 +1011,7 @@ server <- function(input, output,session) {
     selectInput("color_col_barplot_mod2", label = NULL,
                 width = "220px",
                 selected=NULL,
-                choices = names(rowData(D))
+                choices = names(rowData(D()))
     )
   })
   
@@ -1035,7 +1045,7 @@ server <- function(input, output,session) {
                                           renderUI({selectInput("mod2_reference_samp",
                                                                 label = NULL,
                                                                 selected = "GROUP_ID",
-                                                                choices = names(colData(D)),
+                                                                choices = names(colData(D())),
                                                                 width = "220px"
                                           )
                                           }),
@@ -1043,7 +1053,7 @@ server <- function(input, output,session) {
                                           
                                           tags$p(HTML("Reference column value:")),
                                           renderUI({selectInput("mod2_reference_val", label = NULL,
-                                                                choices = colData(D) %>% as.data.frame() %>%
+                                                                choices = colData(D()) %>% as.data.frame() %>%
                                                                   dplyr::select(input$mod2_reference_samp) %>% unique() %>%
                                                                   unlist() %>% as.character(),width = "220px" )
                                           })
@@ -1052,7 +1062,7 @@ server <- function(input, output,session) {
            "external column" = list(tags$p(HTML("Numeric-value column in colData:")),
                                     selectInput("mod2_ext_norm",
                                                 label = NULL,
-                                                choices = colData(D) %>% as.data.frame() %>% dplyr::select(where(is.numeric)) %>% names(),
+                                                choices = colData(D()) %>% as.data.frame() %>% dplyr::select(where(is.numeric)) %>% names(),
                                                 selected = "GROUP_ID",
                                                 width = "220px"
                                     )
@@ -1248,7 +1258,7 @@ server <- function(input, output,session) {
   # get proprocessing SE
   D_missingness <- reactive({
     ## preprocessing D
-    D <- D %>%
+    D <- D() %>%
       mt_reporting_heading(heading = "Preprocessing", lvl=1) %>%
       mt_reporting_heading(heading = "Filtering", lvl = 2) %>%
       mt_plots_missingness(feat_max=(input$mod2_filter_feat_max)/100,samp_max = (input$mod2_filter_sample_max)/100) %>%
