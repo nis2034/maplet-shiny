@@ -28,6 +28,7 @@ source("help_functions.R")
 
 # extract object names from result SE 'D'
 
+options(shiny.maxRequestSize = 50*1024^2)  # Set maximum file size to 50MB (50 * 1024^2 bytes)
 
 
 ################################################################################
@@ -619,25 +620,44 @@ server <- function(input, output,session) {
     categories$sheet1 <- "data"
     categories$sheet2 <- "data"
     categories$sheet3 <- "data"
+    
+    # If the file has less than 3 sheets, show an error message and hide the dropdowns
+    if (length(sheets) < 3) {
+      showModal(
+        modalDialog(
+          title = "Error",
+          "The file must have at least three sheets.",
+          easyClose = TRUE,
+          footer = NULL
+        )
+      )
+    }
+    
   })
+  
+
   
   output$mod0_sheet_dropdowns <- renderUI({
     dropdowns <- c("assay", "row", "col")
     file <- input$file$datapath
     sheets <- excel_sheets(file)
     
-    # Generate dropdown menus for each category
-    ui_list <- lapply(dropdowns, function(dropdown) {
-      selectInput(
-        inputId = paste0("dropdown_", dropdown),
-        label = paste("Choose", dropdown),
-        choices = sheets
-      )
-    })
-    
+    # Only render the dropdowns if the file has at least 3 sheets
+    if (length(sheets) >= 3) {  
+      # Generate dropdown menus for each category
+      ui_list <- lapply(dropdowns, function(dropdown) {
+        selectInput(
+          inputId = paste0("dropdown_", dropdown),
+          label = paste("Choose", dropdown),
+          choices = sheets
+        )
+      })
+      
     do.call(tagList, ui_list)
-    
+  }
+      
   })
+
   
   observeEvent(input$mod0_go, {
     sheet_list <- sheet_list()
@@ -648,6 +668,21 @@ server <- function(input, output,session) {
     selected_row_data_sheet <- input$dropdown_row
     
     selected_col_data_sheet <- input$dropdown_col
+    
+    print(selected_row_data_sheet)
+    
+    # Check if any duplicate selections exist
+    if (length(unique(c(selected_data_sheet, selected_row_data_sheet, selected_col_data_sheet))) < 3) {
+      showModal(
+        modalDialog(
+          title = "Error",
+          "Please select only one unique sheet per category.",
+          easyClose = TRUE,
+          footer = NULL
+        )
+      )
+      return()  # Stop execution if there are duplicate selections
+    }
     
     ### get assay, rowData, and colData matrices ------
     #df <- as.data.frame(readxl::read_excel(path=input$file$datapath,sheet=selected_data_sheet, col_names=T))
@@ -667,30 +702,36 @@ server <- function(input, output,session) {
     
     print(sheet_list)
     
-    D(mt_load_se_xls(file=input$file$datapath, sheet_names=c(selected_data_sheet, selected_row_data_sheet, selected_col_data_sheet)))
+    tryCatch(
+      {
+        D(mt_load_se_xls(file=input$file$datapath, sheet_names=c(selected_data_sheet, selected_row_data_sheet, selected_col_data_sheet)))
+        # Print the coldata
+        print(names(colData(D())))
+        output$mod0_assay_display <- renderPrint(assay(D()))
+        showModal(
+          modalDialog(
+            title = "Success",
+            "SE object was created successfully. The assay data is printed for your reference. Please proceed to the next steps of the pipeline in the Navigation Bar.",
+            easyClose = TRUE,
+            footer = NULL
+          )
+        )
+      },
+      error = function(e) {
+        showModal(
+          modalDialog(
+            title = "Error",
+            "SE object was not created successfully. Please select the sheets from the dropdown again.",
+            easyClose = TRUE,
+            footer = NULL
+          )
+        )
+      }
+    )
     
-    
-    
-    
-    # Print the row metadata
-    
-    print(names(colData(D())))
-    output$mod0_assay_display <- renderPrint(assay(D()))
-   
-   
     
     
   })
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
   
   
   
@@ -710,8 +751,6 @@ server <- function(input, output,session) {
                 choices = names(colData(D()))
     )
   })
-  
-  
   
   output$mod6_pre_pca_color_column <- renderUI({
     selectInput("pre_pca_color_column", label = NULL,
@@ -780,8 +819,6 @@ server <- function(input, output,session) {
     
     output$mod6_main_panel  <- renderUI({
       
-      
-      
       mod6_output_plotlist <-   lapply(1: pl_list$length, function(i){
         local({
           len_j <- length(pl_list$value[[i]])
@@ -797,7 +834,6 @@ server <- function(input, output,session) {
         
         
       })
-      
       
       do.call(tagList, mod6_output_plotlist)
       
@@ -824,10 +860,7 @@ server <- function(input, output,session) {
       
     })
     
-  })   
-  
-  
-  
+  }) 
   
   observeEvent(input$mod6_go_differ,{
     # define main panel of differential analysis
@@ -885,7 +918,6 @@ server <- function(input, output,session) {
     })
     
   })
-  
   
   # get proprocessing SE
   D_preprocess <- reactive({
@@ -950,7 +982,6 @@ server <- function(input, output,session) {
     D
   })
   
-  
   # render logic of the log text of preprocessing
   output$log_preprocess <- renderPrint({
     # loading log
@@ -978,9 +1009,6 @@ server <- function(input, output,session) {
     str <- paste( text_preprocess, text_differ, sep = "\n")
     cat(str)
   })
-  
-  
-  
   
   
   # Define rendering logic of outputs in Module-Pre-processing (coded as mod2) ------------------------------
@@ -1050,7 +1078,6 @@ server <- function(input, output,session) {
                                           )
                                           }),
                                           
-                                          
                                           tags$p(HTML("Reference column value:")),
                                           renderUI({selectInput("mod2_reference_val", label = NULL,
                                                                 choices = colData(D()) %>% as.data.frame() %>%
@@ -1072,6 +1099,9 @@ server <- function(input, output,session) {
     )
     
   })
+  
+  
+  
   # Define rendering logic of outputs in Module-Pre-processing(coded as mod2) ------------------------------
   
   
@@ -1108,7 +1138,6 @@ server <- function(input, output,session) {
         
       })
       
-      
       do.call(tagList, mod2_output_plotlist)
       
       
@@ -1139,7 +1168,6 @@ server <- function(input, output,session) {
   
   
   # pheatmap_list <- reactiveValues()
-  
   
   observeEvent(input$mod2_go_impute,{
     # define main panel of differential analysis
@@ -1176,6 +1204,7 @@ server <- function(input, output,session) {
       
     })
     
+    
     lapply(1: pimpute_list$length, function(i){
       local({
         
@@ -1197,6 +1226,7 @@ server <- function(input, output,session) {
     })
     
   })
+  
   
   observeEvent(input$mod2_go_norm,{
     # define main panel of differential analysis
@@ -1298,8 +1328,8 @@ server <- function(input, output,session) {
       
       {.}
     
-    D
-  }) 
+   D
+  })
   
   D_norm <- reactive({ 
     
@@ -1327,7 +1357,6 @@ server <- function(input, output,session) {
     D
   })
   
-  
   D_heatmap <- reactive({ 
     D <- D_norm() %>%
       
@@ -1348,6 +1377,8 @@ server <- function(input, output,session) {
   
   
   
+
+  
   
   
   # Define rendering logic of control widgets in Module-Annotations Explorer(coded as mod5) ----------------------
@@ -1355,7 +1386,7 @@ server <- function(input, output,session) {
     switch(input$mod5_dimension,
            "col"=list(selectInput("mod5_var1_select", 
                                   "Select the primary variable:", 
-                                  choices = names(colData(D)),
+                                  choices = names(colData(D())),
                                   selected = "Age",
                                   width = "220px"),
                       checkboxInput("mod5_var1_type", 
@@ -1364,7 +1395,7 @@ server <- function(input, output,session) {
                       tags$hr(),
                       selectInput("mod5_var2_select", 
                                   "Select the secondary variable:", 
-                                  choices = names(colData(D)),
+                                  choices = names(colData(D())),
                                   selected = "sample",
                                   width = "220px"),
                       checkboxInput("mod5_var2_type", 
@@ -1373,14 +1404,14 @@ server <- function(input, output,session) {
                       tags$hr(),
                       selectInput("mod5_select_hover", 
                                   "Select hovering text:", 
-                                  choices = names(colData(D)),
-                                  selected = names(colData(D))[1],
+                                  choices = names(colData(D())),
+                                  selected = names(colData(D()))[1],
                                   width = "220px",
                                   multiple=TRUE)
            ),
            "row"=selectInput("mod5_rowdata_plot", 
                              "Select one plot for row data:", 
-                             choices = names(rowData(D)),
+                             choices = names(rowData(D())),
                              width = "220px")
     )
   })
@@ -1418,30 +1449,30 @@ server <- function(input, output,session) {
     session_store$mod5_plotly <- switch(input$mod5_dimension,
                                         "col"=
                                           if(mod5_input()[2]==TRUE & mod5_input()[4]==TRUE){
-                                            mod5_scatter(D, x=mod5_input()[3], 
+                                            mod5_scatter(D(), x=mod5_input()[3], 
                                                          y=mod5_input()[1], 
                                                          hover = input$mod5_select_hover)
                                           } else if(mod5_input()[2]==TRUE & mod5_input()[4]==FALSE) {
-                                            mod5_boxplot(D, x=mod5_input()[3], 
+                                            mod5_boxplot(D(), x=mod5_input()[3], 
                                                          x_cate = FALSE,
                                                          y=mod5_input()[1],
                                                          y_cate = TRUE,
                                                          fill=mod5_input()[3], 
                                                          hover=input$mod5_select_hover)
                                           } else if(mod5_input()[2]==FALSE & mod5_input()[4]==TRUE) {
-                                            mod5_boxplot(D, x=mod5_input()[1], 
+                                            mod5_boxplot(D(), x=mod5_input()[1], 
                                                          x_cate = FALSE,
                                                          y=mod5_input()[3],
                                                          y_cate = TRUE,
                                                          fill=mod5_input()[1], 
                                                          hover=input$mod5_select_hover)
                                           } else {
-                                            mod5_barplot(D, x=mod5_input()[3], 
+                                            mod5_barplot(D(), x=mod5_input()[3], 
                                                          fill=mod5_input()[1], 
                                                          hover = input$mod5_select_hover)
                                           },
                                         "row"=
-                                          rowData(D) %>%
+                                          rowData(D()) %>%
                                           data.frame %>%
                                           dplyr::rename(var=mod5_input()[5]) %>%
                                           dplyr::group_by(var) %>%
@@ -1485,7 +1516,7 @@ server <- function(input, output,session) {
   
   output$mod5_plot2 <- renderPlotly({
     d5 <- event_data("plotly_click", source = "mod5-click")
-    pie_dat <- as.data.frame(rowData(D))
+    pie_dat <- as.data.frame(rowData(D()))
     
     if (!is.null(d5)){
       lvls <- rev(pie_dat$SUPER_PATHWAY)
@@ -1558,7 +1589,7 @@ server <- function(input, output,session) {
         ),
         selectInput("mod3_select_colData", 
                     "Select one coloring variable:", 
-                    choices = names(colData(D)),
+                    choices = names(colData(D())),
                     selected = "BOX.NUMBER",
                     width = "220px"
         ),
@@ -1571,7 +1602,7 @@ server <- function(input, output,session) {
                     # selectInput coerces its output to character
                     # https://github.com/rstudio/shiny/issues/2367
                     # choices = setNames(seq_along(colData(D)), names(colData(D))),
-                    choices = names(colData(D)),
+                    choices = names(colData(D())),
                     selected = "sample",
                     width = "220px",
                     multiple=TRUE
@@ -1583,7 +1614,7 @@ server <- function(input, output,session) {
         ),
         selectInput("mod3_select_colData", 
                     "Select one coloring variable:", 
-                    choices = names(rowData(D)),
+                    choices = names(rowData(D())),
                     selected = "SUPER_PATHWAY",
                     width = "220px"
         ),
@@ -1594,7 +1625,7 @@ server <- function(input, output,session) {
         selectInput("mod3_select_hover", 
                     "Select hovering text:", 
                     # choices = setNames(seq_along(rowData(D)), names(rowData(D))),
-                    choices = names(rowData(D)),
+                    choices = names(rowData(D())),
                     selected = "name",
                     width = "220px",
                     multiple=TRUE
@@ -1610,7 +1641,7 @@ server <- function(input, output,session) {
       ),
       selectInput("mod3_select_colData", 
                   "Select one coloring variable:", 
-                  choices = names(colData(D)),
+                  choices = names(colData(D())),
                   selected = "BOX.NUMBER",
                   width = "220px"
       ),
@@ -1621,7 +1652,7 @@ server <- function(input, output,session) {
       selectInput("mod3_select_hover", 
                   "Select hovering text:", 
                   # choices = setNames(seq_along(colData(D)), names(colData(D))),
-                  choices = names(colData(D)),
+                  choices = names(colData(D())),
                   selected = "sample",
                   width = "220px",
                   multiple=TRUE
@@ -1637,7 +1668,7 @@ server <- function(input, output,session) {
         
         selectInput("mod3_select_subgroup", 
                     "Select one subgroup variable:", 
-                    choices = names(colData(D)),
+                    choices = names(colData(D())),
                     selected = "GROUP_ID",
                     width = "220px"
         ),
@@ -1645,7 +1676,7 @@ server <- function(input, output,session) {
         selectInput("mod3_select_hover", 
                     "Select hovering text:", 
                     # choices = setNames(seq_along(colData(D)), names(colData(D))),
-                    choices = names(colData(D)),
+                    choices = names(colData(D())),
                     selected = "sample",
                     width = "220px",
                     multiple=TRUE
@@ -1787,7 +1818,7 @@ server <- function(input, output,session) {
   output$mod7_outcome <- renderUI({
     selectInput("outcome_mod7", label = NULL,
                 width = "220px",
-                choices = names(colData(D)),
+                choices = names(colData(D())),
                 selected = "GROUP_ID"
     )
   })
@@ -1802,12 +1833,12 @@ server <- function(input, output,session) {
       list( 
         selectInput("mod7_samp_filter", label = "Sample Filter Variable:",
                     width = "220px",
-                    choices = names(colData(D)),
+                    choices = names(colData(D())),
                     selected = "GROUP_ID"
         ),
         
         multiInput("mod7_filter_val", label = input$mod7_samp_filter,
-                   choices = colData(D) %>% as.data.frame() %>% dplyr::select(input$mod7_samp_filter) %>% unique() %>% unlist() %>% as.character(),width = "350px"
+                   choices = colData(D()) %>% as.data.frame() %>% dplyr::select(input$mod7_samp_filter) %>% unique() %>% unlist() %>% as.character(),width = "350px"
                    
         )
         
@@ -1833,11 +1864,11 @@ server <- function(input, output,session) {
     switch(input$mod7_analysis_type,
            "lm"=list(multiInput("mod7_covar_col_select", 
                                 label = "Select Covariates from Column Data:", 
-                                choices = names(colData(D)),width = "350px"),
+                                choices = names(colData(D())),width = "350px"),
                      tags$hr(),
                      multiInput("mod7_covar_row_select", 
                                 label = "Select Covariates from Row Data:", 
-                                choices = names(rowData(D)),width = "350px")
+                                choices = names(rowData(D())),width = "350px")
            )
            
            
@@ -1853,7 +1884,7 @@ server <- function(input, output,session) {
     selectInput("group_col_barplot_mod7", label = NULL,
                 width = "220px",
                 selected=NULL,
-                choices = names(rowData(D))
+                choices = names(rowData(D()))
     )
   })
   
@@ -1861,7 +1892,7 @@ server <- function(input, output,session) {
     selectInput("color_col_barplot_mod7", label = NULL,
                 width = "220px",
                 selected="BIOCHEMICAL",
-                choices = names(rowData(D))
+                choices = names(rowData(D()))
     )
   })
   
