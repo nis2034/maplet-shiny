@@ -162,6 +162,12 @@ ui <- fluidPage(
                          tags$p(HTML("Sample coloring column:")),
                          uiOutput("mod6_pre_sample_color_column"),
                          
+                         tags$p(HTML("Reference sample column:")),
+                         uiOutput("mod6_norm"),
+                         
+                         tags$p(HTML("Reference column value:")),
+                         uiOutput("mod6_norm_value"),
+                         
                          tags$p(HTML("PCA/UMAP coloring column:")),
                          uiOutput("mod6_pre_pca_color_column"),
                          tags$p(HTML("Heatmap annotation column:")),
@@ -169,7 +175,26 @@ ui <- fluidPage(
                          tags$p(HTML("Heatmap annotation row:")),
                          uiOutput("mod6_pre_heatmap_anno_row"),
                          tags$p(HTML("Run to see log text of data loading and preprocessing. This step may cost a few seconds to run.")),
-                         actionButton("mod6_go_preprocess", "Run", width = "110px")
+                         actionButton("mod6_go_preprocess", "Run", width = "110px"),
+                         
+                         tags$p(HTML("Reference sample column:")),
+                         
+                         
+                         renderUI({selectInput("mod6_reference_samp",
+                                               label = NULL,
+                                               selected = "GROUP_ID",
+                                               choices = names(colData(D())),
+                                               width = "220px")
+                          }),
+                           
+                           tags$p(HTML("Reference column value:")),
+                           renderUI({selectInput("mod6_reference_val", label = NULL,
+                                                 choices = colData(D()) %>% as.data.frame() %>%
+                                                   dplyr::select(input$mod2_reference_samp) %>% unique() %>%
+                                                   unlist() %>% as.character(),width = "220px" )
+                           })
+                         
+                         
                      ),
                      
                      tags$hr(),
@@ -752,6 +777,27 @@ server <- function(input, output,session) {
     )
   })
   
+  #Newly added normalization column
+  output$mod6_norm <- renderUI({selectInput("mod6_reference_samp",
+                                            label = NULL,
+                                            selected = "GROUP_ID",
+                                            choices = names(colData(D())),
+                                            width = "220px"
+    )
+  })
+  
+  
+  
+  #Newly added normalization value
+  output$mod6_norm_value <- renderUI({selectInput("mod6_reference_val", 
+                                                  label = NULL,
+                                                  choices = colData(D()) %>% as.data.frame() %>%
+                                                  dplyr::select(input$mod6_reference_samp) %>% unique() %>%
+                                                  unlist() %>% as.character(),width = "220px" )
+  })
+  
+  
+  
   output$mod6_pre_pca_color_column <- renderUI({
     selectInput("pre_pca_color_column", label = NULL,
                 width = "220px",
@@ -939,9 +985,12 @@ server <- function(input, output,session) {
     }
     D <- D %>%
       mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column), title = "After batch correction", plot_logged = T) %>%
-      mt_pre_norm_quot(feat_max = (input$mod6_feat_max_norm)/100, ref_samples = GROUP_ID=="Healthy") %>%
+      mt_pre_trans_exp() %>%
+      mt_pre_norm_quot(feat_max = (input$mod6_feat_max_norm)/100, ref_samples = (!!sym(input$mod6_reference_samp) == input$mod6_reference_val)) %>%
+      #mt_pre_norm_quot(feat_max = (input$mod6_feat_max_norm)/100, ref_samples = GROUP_ID=="Healthy") %>%
       mt_plots_dilution_factor(in_col=input$pre_sample_color_column) %>%
       mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column), title = "After normalization", plot_logged = T) %>%
+    
       mt_pre_trans_log() %>%
       mt_pre_impute_min() %>%
       mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column), title = "After imputation", plot_logged = T) %>%
@@ -1333,29 +1382,41 @@ server <- function(input, output,session) {
   
   D_norm <- reactive({ 
     
-    D <- D_impute()
+    D <- D_impute() 
+    #print(dim(D))
+    #D <- D %>%
+    #  mt_pre_trans_exp()
+    
     if(input$mod2_norm_type == "probabilistic quotient"){
-      D %<>%
+      
+      D <- D %>%
+        mt_pre_trans_exp() %>%
+        #mt_reporting_heading(heading = "STEP1") %>%
         mt_pre_norm_quot(feat_max = (input$mod2_norm_feat_max)/100, ref_samples = (!!sym(input$mod2_reference_samp) == input$mod2_reference_val)) %>%
+        #mt_reporting_heading(heading = "STEP2") %>%
         mt_plots_dilution_factor(in_col=input$pre_sample_color_column_mod2) 
     }else
     {
-      D %<>%
+      
+      D <- D %>%
+        mt_pre_trans_exp() %>%
         mt_pre_norm_external(col_name=input$mod2_ext_norm)
     }
     if(input$mod2_trans_log){
       
-      D %<>%
+      D <- D %>%
+        mt_pre_trans_exp() %>%
         mt_pre_trans_log()
     }
     
-    D %<>%     
-      
+    D <- D %>%     
       mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column_mod2), title = "After normalization", plot_logged = T) %>%
       {.}
     
     D
   })
+  
+  
   
   D_heatmap <- reactive({ 
     D <- D_norm() %>%
