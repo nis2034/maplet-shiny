@@ -83,16 +83,28 @@ ui <- fluidPage(
                             # sidebar autoscroll with main panel
                             style = "margin-left: -25px; margin-top: 45px; margin-bottom: 5px; position:fixed; width: 20%; height: 100%;",
                             
+                            tags$p(
+                              HTML("<b>Hint:<br></b>Please upload an excel file which with 3 sheets containing assay data, 
+                              rowData and colData each OR Please upload an R file which generates an SE object to be used in the 
+                              rest of the pipeline."
+                                   
+                              )),
+                            br(),
                             
-                            fileInput("file", "Upload Excel File", accept = c(".xlsx", ".xls")), br(),
+                            fileInput("file", "Upload Excel File", accept = c(".xlsx", ".xls")), 
+                            # delay the output
+                            actionButton("mod0_go", "Upload Excel File"), br(),
+                            
+                            fileInput("se_file", "Upload R File", accept = ".R"), 
+                            # delay the output for R file
+                            actionButton("mod0_go_R", "Upload R file"), 
                             
                             br(),
                             tags$p(
                               HTML("<b>Hint:<br></b>Outputs are delayed untill you click 'Upload' button after selection."
                               )),
-                            br(),
-                            # delay the output
-                            actionButton("mod0_go", "Upload")
+                            br()
+                            
                ), 
                mainPanel(id = "mod0_panel2", 
                          br(), 
@@ -108,6 +120,7 @@ ui <- fluidPage(
                )
              )
     ),
+    
     
     # Define layout of Module-Real-Time Pipeline(coded as mod6) ----------------------------------------------------
     tabPanel(HTML(paste("Real-Time", "Pipeline", sep = "<br/>")), 
@@ -616,12 +629,15 @@ server <- function(input, output,session) {
   
   categories <- reactiveValues(sheet1 = "assay", sheet2 = "assay", sheet3 = "assay")
   sheet_list <- reactiveVal()
+  D_excel <- reactiveVal(NULL)
+  se_r <- reactiveVal(NULL)                     
   D <- reactiveVal(NULL)
   
   
-  observeEvent(input$file, {
+  observeEvent(input$file, { 
+    print("happening")
     # Read the uploaded Excel file
-    req(input$file)
+    
     file <- input$file$datapath
     sheets <- excel_sheets(file)
     
@@ -660,102 +676,137 @@ server <- function(input, output,session) {
     
   })
   
-
+  
   
   output$mod0_sheet_dropdowns <- renderUI({
     dropdowns <- c("assay", "row", "col")
     file <- input$file$datapath
-    sheets <- excel_sheets(file)
-    
-    # Only render the dropdowns if the file has at least 3 sheets
-    if (length(sheets) >= 3) {  
-      # Generate dropdown menus for each category
-      ui_list <- lapply(dropdowns, function(dropdown) {
-        selectInput(
-          inputId = paste0("dropdown_", dropdown),
-          label = paste("Choose", dropdown),
-          choices = sheets
-        )
-      })
+    if (!is.null(file)) {
+      sheets <- excel_sheets(file)
       
-    do.call(tagList, ui_list)
-  }
-      
+      # Only render the dropdowns if the file has at least 3 sheets
+      if (length(sheets) >= 3) {  
+        # Generate dropdown menus for each category
+        ui_list <- lapply(dropdowns, function(dropdown) {
+          selectInput(
+            inputId = paste0("dropdown_", dropdown),
+            label = paste("Choose", dropdown),
+            choices = sheets
+          )
+        })
+        
+        do.call(tagList, ui_list)
+      }
+    }
   })
-
+  
   
   observeEvent(input$mod0_go, {
-    sheet_list <- sheet_list()
-    
-    selected_data_sheet <- input$dropdown_assay
+    print("excel buton pressed")
+    file <- input$file$datapath
+    if (!is.null(file)) {
+      sheet_list <- sheet_list()
       
-    
-    selected_row_data_sheet <- input$dropdown_row
-    
-    selected_col_data_sheet <- input$dropdown_col
-    
-    print(selected_row_data_sheet)
-    
-    # Check if any duplicate selections exist
-    if (length(unique(c(selected_data_sheet, selected_row_data_sheet, selected_col_data_sheet))) < 3) {
-      showModal(
-        modalDialog(
-          title = "Error",
-          "Please select only one unique sheet per category.",
-          easyClose = TRUE,
-          footer = NULL
-        )
-      )
-      return()  # Stop execution if there are duplicate selections
-    }
-    
-    ### get assay, rowData, and colData matrices ------
-    #df <- as.data.frame(readxl::read_excel(path=input$file$datapath,sheet=selected_data_sheet, col_names=T))
-    #df %<>% tibble::column_to_rownames(colnames(df)[1])
-    #assay <- as.matrix(df)
-    #rd <- as.data.frame(readxl::read_excel(path=input$file$datapath,sheet=selected_row_data_sheet,col_names=T))
-    #rd %<>% tibble::column_to_rownames(colnames(rd)[1])
-    #cd <- as.data.frame(readxl::read_excel(path=input$file$datapath,sheet=selected_col_data_sheet,col_names=T))
-    
-    
-    # Create a SummarizedExperiment object
-    #se_object <- SummarizedExperiment(assay = assay,
-    #                          rowData = rd,
-    #                          colData = cd,
-    #                          metadata = list(sessionInfo=utils::sessionInfo()))
-    
-    
-    print(sheet_list)
-    
-    tryCatch(
-      {
-        D(mt_load_se_xls(file=input$file$datapath, sheet_names=c(selected_data_sheet, selected_row_data_sheet, selected_col_data_sheet)))
-        # Print the coldata
-        print(names(colData(D())))
-        output$mod0_assay_display <- renderPrint(assay(D()))
-        showModal(
-          modalDialog(
-            title = "Success",
-            "SE object was created successfully. The assay data is printed for your reference. Please proceed to the next steps of the pipeline in the Navigation Bar.",
-            easyClose = TRUE,
-            footer = NULL
-          )
-        )
-      },
-      error = function(e) {
+      selected_data_sheet <- input$dropdown_assay
+      
+      
+      selected_row_data_sheet <- input$dropdown_row
+      
+      selected_col_data_sheet <- input$dropdown_col
+      
+      print(selected_row_data_sheet)
+      
+      # Check if any duplicate selections exist
+      if (length(unique(c(selected_data_sheet, selected_row_data_sheet, selected_col_data_sheet))) < 3) {
         showModal(
           modalDialog(
             title = "Error",
-            "SE object was not created successfully. Please select the sheets from the dropdown again.",
+            "Please select only one unique sheet per category.",
             easyClose = TRUE,
             footer = NULL
           )
         )
+        return()  # Stop execution if there are duplicate selections
       }
-    )
+      
+      print(sheet_list)
+      
+      tryCatch(
+        {
+          D_excel(mt_load_se_xls(file=input$file$datapath, sheet_names=c(selected_data_sheet, selected_row_data_sheet, selected_col_data_sheet)))
+          # Print the coldata
+          print(names(colData(D_excel())))
+          output$mod0_assay_display <- renderPrint(assay(D_excel()))
+          showModal(
+            modalDialog(
+              title = "Success",
+              "SE object was created successfully. The assay data is printed for your reference. Please proceed to the next steps of the pipeline in the Navigation Bar.",
+              easyClose = TRUE,
+              footer = NULL
+            )
+          )
+          
+        },
+        error = function(e) {
+          showModal(
+            modalDialog(
+              title = "Error",
+              "SE object was not created successfully. Please select the sheets from the dropdown again.",
+              easyClose = TRUE,
+              footer = NULL
+            )
+          )
+        }
+      )
+      
+    }
     
-    
-    
+  })
+  
+  
+  # Function to generate SE object from the uploaded R file
+  generateSEObject <- function(file_path) {
+    file_content <- readLines(file_path)
+    print("whyyyy")
+    se <- eval(parse(text = file_content))
+    return(se)
+  }
+  
+  # Reactive expression for storing the SE object
+  se_r <- eventReactive(input$mod0_go_R, {
+    #req(input$file)  # Ensure a file is uploaded
+    print("R button pressed")
+    req(input$se_file)
+    file <- input$se_file
+    file_path <- file$datapath
+    print("going here")
+    se <- generateSEObject(file_path)
+    return(se)
+  })
+  
+  # Print the dimensions of the SE object
+  #observe({
+  #  print(dim(se_r()))
+  #})
+  
+  # Final variable to store the SE object
+  D <- reactive({
+    if (!is.null(D_excel())) {
+      print("excel uploaded")
+      D_excel()  # Use SE object from Excel file if it exists
+    } else if (!is.null(se_r())) {
+      print("R uploaded")
+      se_r()  # Use SE object from R file if it exists
+    } else {
+      NULL  # Default value if no SE object is available
+    }
+  })
+  
+  # Print the dimensions of the final SE object
+  observe({
+    if (!is.null(D())) {
+      print(dim(D()))
+    }
   })
   
   
