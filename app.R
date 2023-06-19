@@ -20,6 +20,7 @@ library(readxl)
 library(RColorBrewer)
 library(grid)
 library(graphics)
+library(DT)
 # refer help functions
 source("help_functions.R")
 
@@ -85,7 +86,7 @@ ui <- fluidPage(
                             
                             tags$p(
                               HTML("<b>Hint:<br></b>Please upload an excel file which with 3 sheets containing assay data, 
-                              rowData and colData each OR Please upload an R file which generates an SE object to be used in the 
+                              rowData and colData each OR Please upload an rds file which contains an SE object to be used in the 
                               rest of the pipeline."
                                    
                               )),
@@ -94,11 +95,14 @@ ui <- fluidPage(
                             fileInput("file", "Upload Excel File", accept = c(".xlsx", ".xls")), 
                             # delay the output
                             actionButton("mod0_go", "Upload Excel File"), br(),
+                            br(),
+                            br(),
                             
-                            fileInput("se_file", "Upload R File", accept = ".R"), 
+                            fileInput("se_file", "Upload rds File with an SE object", accept = ".rds"), 
                             # delay the output for R file
                             actionButton("mod0_go_R", "Upload R file"), 
                             
+                            br(),
                             br(),
                             tags$p(
                               HTML("<b>Hint:<br></b>Outputs are delayed untill you click 'Upload' button after selection."
@@ -112,10 +116,13 @@ ui <- fluidPage(
                          br(), 
                          style = "overflow-y: auto; position: absolute; left: 25%",
                          uiOutput("mod0_sheet_dropdowns"),
+                         
                          br(), 
                          br(), 
                          br(),
-                         verbatimTextOutput("mod0_assay_display")
+                         #verbatimTextOutput("mod0_assay_display")
+                         uiOutput("mod0_sheet_viewer"),
+                         DTOutput("excel_table")
                          
                )
              )
@@ -640,6 +647,7 @@ server <- function(input, output,session) {
     
     file <- input$file$datapath
     sheets <- excel_sheets(file)
+    updateSelectInput(session, "sheet_viewer", choices = sheets)
     
     # Create a named list to store sheet names and their corresponding category
     sheet_list(lapply(sheets, function(sheet) {
@@ -676,7 +684,7 @@ server <- function(input, output,session) {
     
   })
   
-  
+
   
   output$mod0_sheet_dropdowns <- renderUI({
     dropdowns <- c("assay", "row", "col")
@@ -697,6 +705,18 @@ server <- function(input, output,session) {
         
         do.call(tagList, ui_list)
       }
+      
+      
+      
+      
+    }
+  })
+  
+  output$mod0_sheet_viewer <- renderUI({
+    file <- input$file$datapath
+    if (!is.null(file)) {
+      sheets <- excel_sheets(file)
+      selectInput("sheet_viewer", "Select Sheet", choices = NULL)
     }
   })
   
@@ -736,7 +756,17 @@ server <- function(input, output,session) {
           D_excel(mt_load_se_xls(file=input$file$datapath, sheet_names=c(selected_data_sheet, selected_row_data_sheet, selected_col_data_sheet)))
           # Print the coldata
           print(names(colData(D_excel())))
-          output$mod0_assay_display <- renderPrint(assay(D_excel()))
+          #output$mod0_assay_display <- renderPrint(assay(D_excel()))
+          file <- input$file$datapath
+          #sheets = excel_sheets(file)
+          
+          
+          output$excel_table = DT::renderDataTable({
+            sheet_v = input$sheet_viewer
+            df <- read.xlsx(file, sheet_v)  # Adjust the sheet number as needed
+            DT::datatable(df)
+          })
+          
           showModal(
             modalDialog(
               title = "Success",
@@ -768,20 +798,20 @@ server <- function(input, output,session) {
   generateSEObject <- function(file_path) {
     file_content <- readLines(file_path)
     print("whyyyy")
-    se <- eval(parse(text = file_content))
+    se <- readRDS(file_path)
+    
     return(se)
   }
   
   # Reactive expression for storing the SE object
   se_r <- eventReactive(input$mod0_go_R, {
-    #req(input$file)  # Ensure a file is uploaded
-    print("R button pressed")
-    req(input$se_file)
+    #req(input$se_file)
     file <- input$se_file
     file_path <- file$datapath
-    print("going here")
     se <- generateSEObject(file_path)
-    return(se)
+    #se2 <- readRDS("se_object.rds")
+    #output$mod0_assay_display <- renderPrint(assay(se2))
+    return(se2)
   })
   
   # Print the dimensions of the SE object
