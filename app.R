@@ -802,17 +802,38 @@ server <- function(input, output,session) {
     
   #  return(se)
   #}
-  
-  # Reactive expression for storing the SE object
-  se_r <- eventReactive(input$mod0_go_R, {
-    #req(input$se_file)
-    file <- input$se_file
-    file_path <- file$datapath
-    se <- readRDS(file_path)
-    #se2 <- readRDS("se_object.rds")
-    #output$mod0_assay_display <- renderPrint(assay(se2))
-    return(se)
-  })
+  tryCatch({
+    # Reactive expression for storing the SE object
+    se_r <- eventReactive(input$mod0_go_R, {
+      #req(input$se_file)
+      file <- input$se_file
+      file_path <- file$datapath
+      se <- readRDS(file_path)
+      #se2 <- readRDS("se_object.rds")
+      #output$mod0_assay_display <- renderPrint(assay(se2))
+
+        showModal(
+        modalDialog(
+          title = "Success",
+          "SE object was created successfully. The assay data is printed for your reference. Please proceed to the next steps of the pipeline in the Navigation Bar.",
+          easyClose = TRUE,
+          footer = NULL
+        )
+      )
+        return(se)
+    })
+  },
+  error = function(e) {
+    showModal(
+      modalDialog(
+        title = "Error",
+        "SE object was not created successfully. Please select the sheets from the dropdown again.",
+        easyClose = TRUE,
+        footer = NULL
+      )
+    )
+  }
+  )
   
   # Print the dimensions of the SE object
   #observe({
@@ -1710,6 +1731,7 @@ server <- function(input, output,session) {
   # create intermediate var to indicate coloring widgets
   inter_var <- reactive({
     if (input$mod3_select_plot=="pca" & input$mod3_pca_data_type=="scores") {
+      
       "pca-scores"
     } else if(input$mod3_select_plot=="pca" & input$mod3_pca_data_type=="loadings"){
       "pca-loadings"
