@@ -75,7 +75,7 @@ ui <- fluidPage(
                 windowTitle = "Maplet"),
     # sticky tabs while scrolling main panel
     position = c("fixed-top"), 
-     
+    
     # Define layout of Uploading Data(coded as mod0) ----------------------------------------------------
     
     tabPanel(HTML(paste("Upload", "Data", sep = "<br/>")), 
@@ -205,14 +205,14 @@ ui <- fluidPage(
                                                selected = "GROUP_ID",
                                                choices = names(colData(D())),
                                                width = "220px")
-                          }),
-                           
-                           tags$p(HTML("Reference column value:")),
-                           renderUI({selectInput("mod6_reference_val", label = NULL,
-                                                 choices = colData(D()) %>% as.data.frame() %>%
-                                                   dplyr::select(input$mod2_reference_samp) %>% unique() %>%
-                                                   unlist() %>% as.character(),width = "220px" )
-                           })
+                         }),
+                         
+                         tags$p(HTML("Reference column value:")),
+                         renderUI({selectInput("mod6_reference_val", label = NULL,
+                                               choices = colData(D()) %>% as.data.frame() %>%
+                                                 dplyr::select(input$mod2_reference_samp) %>% unique() %>%
+                                                 unlist() %>% as.character(),width = "220px" )
+                         })
                          
                          
                      ),
@@ -684,7 +684,7 @@ server <- function(input, output,session) {
     
   })
   
-
+  
   
   output$mod0_sheet_dropdowns <- renderUI({
     dropdowns <- c("assay", "row", "col")
@@ -795,23 +795,23 @@ server <- function(input, output,session) {
   
   
   # Function to generate SE object from the uploaded R file
-  generateSEObject <- function(file_path) {
-    file_content <- readLines(file_path)
-    print("whyyyy")
-    se <- readRDS(file_path)
+  #generateSEObject <- function(file_path) {
+  #  file_content <- readLines(file_path)
+  #  print("whyyyy")
+  #  se <- readRDS(file_path)
     
-    return(se)
-  }
+  #  return(se)
+  #}
   
   # Reactive expression for storing the SE object
   se_r <- eventReactive(input$mod0_go_R, {
     #req(input$se_file)
     file <- input$se_file
     file_path <- file$datapath
-    se <- generateSEObject(file_path)
+    se <- readRDS(file_path)
     #se2 <- readRDS("se_object.rds")
     #output$mod0_assay_display <- renderPrint(assay(se2))
-    return(se2)
+    return(se)
   })
   
   # Print the dimensions of the SE object
@@ -864,7 +864,7 @@ server <- function(input, output,session) {
                                             selected = "GROUP_ID",
                                             choices = names(colData(D())),
                                             width = "220px"
-    )
+  )
   })
   
   
@@ -873,8 +873,8 @@ server <- function(input, output,session) {
   output$mod6_norm_value <- renderUI({selectInput("mod6_reference_val", 
                                                   label = NULL,
                                                   choices = colData(D()) %>% as.data.frame() %>%
-                                                  dplyr::select(input$mod6_reference_samp) %>% unique() %>%
-                                                  unlist() %>% as.character(),width = "220px" )
+                                                    dplyr::select(input$mod6_reference_samp) %>% unique() %>%
+                                                    unlist() %>% as.character(),width = "220px" )
   })
   
   
@@ -1071,7 +1071,7 @@ server <- function(input, output,session) {
       #mt_pre_norm_quot(feat_max = (input$mod6_feat_max_norm)/100, ref_samples = GROUP_ID=="Healthy") %>%
       mt_plots_dilution_factor(in_col=input$pre_sample_color_column) %>%
       mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column), title = "After normalization", plot_logged = T) %>%
-    
+      
       mt_pre_trans_log() %>%
       mt_pre_impute_min() %>%
       mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column), title = "After imputation", plot_logged = T) %>%
@@ -1458,7 +1458,7 @@ server <- function(input, output,session) {
       
       {.}
     
-   D
+    D
   })
   
   D_norm <- reactive({ 
@@ -1519,7 +1519,7 @@ server <- function(input, output,session) {
   
   
   
-
+  
   
   
   
@@ -1883,16 +1883,41 @@ server <- function(input, output,session) {
   
   # Define rendering logic of control widgets in Module-All Results Explorer(coded as mod1) ------------------------
   
-  obj_name <- reactive({ obj <- get_obj_name(D = D_differ())
-  obj})
+  #obj_name <- reactive({ 
+  #  obj <- get_obj_name(D = D_differ())
+  #  obj
+  #}). I have commented this block
+  
+  obj_name <- reactive({
+    #obj_list <- data.frame(stat_name = character(length(metadata(D_differ())$results)),
+    #                       V1 = character(length(metadata(D_differ())$results)))
+    #obj_list <- data.frame(stat_name = character(length(metadata(D_differ())$results)),
+    #                       V1 = character(length(metadata(D_differ())$results)),
+    #                       V2 = character(length(metadata(D_differ())$results)),
+    #                       V3 = character(length(metadata(D_differ())$results)))
+    
+    obj_list <- data.frame()
+    
+    for (i in seq_along(metadata(D_differ())$results)) {
+      for (j in seq_along(metadata(D_differ())$results[[i]]$fun)) {
+        obj_list[i, j] <- metadata(D_differ())$results[[i]]$fun[j]
+      }
+    }
+    
+    return(obj_list)
+  })
+  
+  
   
   # create stat_name list dependent on radio button
   output$mod1_select_statname_ui <- renderUI({
+    # Get the obj_name() value outside of the selectInput
+    obj_name_data <- obj_name()
     selectInput("mod1_select_statname", "Select one stat name:",
                 width = "220px",
                 
                 #choices = obj_name() %>% .[.$V1 == input$mod1_radio, ] %>% dplyr::distinct(stat_name) %>% .$stat_name
-                choices = obj_name() %>%  dplyr::distinct(.$V1) 
+                choices = obj_name_data %>% dplyr::distinct(.$V1) 
                 
     )
   })
@@ -1900,12 +1925,13 @@ server <- function(input, output,session) {
   # create object list dependent on radio button and stat_name
   output$mod1_select_object_ui <- renderUI({
     if (input$mod1_radio=="stats"){
-      NULL
+      div() #replacing NULL with div
     } else {
+      obj_name_data <- obj_name() #my added
+      print(obj_name_data)
       selectInput("mod1_select_object", "Select one object:",
                   width = "220px",
-                  choices = obj_name() %>% .[.$stat_name == input$mod1_select_statname&.$V1==input$mod1_radio, ] %>% dplyr::distinct(V2) %>% .$V2
-                  
+                  choices = obj_name_data %>% .[.$stat_name == input$mod1_select_statname&.$V1==input$mod1_radio, ] %>% dplyr::distinct(V2) %>% .$V2
       )
     }
     
@@ -1973,16 +1999,18 @@ server <- function(input, output,session) {
     if(input$mod7_filt_samp)
     {
       list( 
-        selectInput("mod7_samp_filter", label = "Sample Filter Variable:",
-                    width = "220px",
-                    choices = names(colData(D())),
-                    selected = "GROUP_ID"
-        ),
-        
-        multiInput("mod7_filter_val", label = input$mod7_samp_filter,
-                   choices = colData(D()) %>% as.data.frame() %>% dplyr::select(input$mod7_samp_filter) %>% unique() %>% unlist() %>% as.character(),width = "350px"
-                   
+        renderUI({selectInput("mod7_samp_filter", label = "Sample Filter Variable:",
+                              width = "220px",
+                              choices = names(colData(D())),
+                              selected = "GROUP_ID"
         )
+        }),
+        
+        renderUI({multiInput("mod7_filter_val", label = input$mod7_samp_filter,
+                             choices = colData(D()) %>% as.data.frame() %>% dplyr::select(input$mod7_samp_filter) %>% unique() %>% unlist() %>% as.character(),width = "350px"
+                             
+        )
+        })
         
       )
     }
@@ -2267,3 +2295,6 @@ server <- function(input, output,session) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+
+
+
