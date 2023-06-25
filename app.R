@@ -1086,7 +1086,7 @@ server <- function(input, output,session) {
     }
     D <- D %>%
       mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column), title = "After batch correction", plot_logged = T) %>%
-      mt_pre_trans_exp() %>%
+      #mt_pre_trans_exp() %>%
       mt_pre_norm_quot(feat_max = (input$mod6_feat_max_norm)/100, ref_samples = (!!sym(input$mod6_reference_samp) == input$mod6_reference_val)) %>%
       #mt_pre_norm_quot(feat_max = (input$mod6_feat_max_norm)/100, ref_samples = GROUP_ID=="Healthy") %>%
       mt_plots_dilution_factor(in_col=input$pre_sample_color_column) %>%
