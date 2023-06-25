@@ -333,7 +333,28 @@ ui <- fluidPage(
                      
                      tags$hr(),
                      
+                     box(
+                       solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE,
+                       title = "Filtration", width = "220px",
+                       tags$p(HTML("Select dimension to filter on:")),
+                       radioButtons("mod2_choice_filter", "Select one dimension:", 
+                                    choices = list("Column Data" = "mod2_col", 
+                                                   "Row Data" = "mod2_row")
+                       ),
+                       br(),
+                       uiOutput("mod2_dimension_filter"),
+                       br(),
+                       uiOutput("mod2_dimension_filter_multi"),
+                       br(),
+                       tags$p(
+                         HTML("Run to filter the data. This step may cost a few seconds to run.")
+                       ),
+                       br(),
+                       # delay the output
+                       actionButton("mod2_go_filter", "Run")
+                     ),
                      
+                     tags$hr(),
                      
                      box(solidHeader = T, collapsible = T, collapsed = T,
                          title="Imputation", width = "220px",
@@ -1193,6 +1214,54 @@ server <- function(input, output,session) {
     )
   })
   
+  output$mod2_dimension_filter <- renderUI({
+    switch(input$mod2_choice_filter,
+           "mod2_col" = {
+             selectInput("mod2_samp1_select",
+                         "Select the sample to filter on",
+                         choices = names(colData(D())),
+                         width = "220px")
+           },
+           "mod2_row" = {
+             selectInput("mod2_feat1_select",
+                         "Select the feature to filter on",
+                         choices = names(rowData(D())),
+                         width = "220px")
+           }
+    )
+  })
+  
+  output$mod2_dimension_filter_multi <- renderUI({
+    switch(input$mod2_choice_filter,
+           "mod2_col" = {
+             multiInput("mod2_filter_col",
+                        label = input$mod2_samp1_select,
+                        choices = colData(D()) %>%
+                          as.data.frame() %>%
+                          dplyr::select(input$mod2_samp1_select) %>%
+                          unique() %>%
+                          unlist() %>%
+                          as.character(),
+                        width = "350px"
+             )
+           },
+           "mod2_row" = {
+             multiInput("mod2_filter_row",
+                        label = input$mod2_feat1_select,
+                        choices = rowData(D()) %>%
+                          as.data.frame() %>%
+                          dplyr::select(input$mod2_feat1_select) %>%
+                          unique() %>%
+                          unlist() %>%
+                          as.character(),
+                        width = "350px"
+             )
+           }
+    )
+  })
+  
+    
+    
   output$mod2_dimension_ui <- renderUI({
     switch(input$mod2_impute_type,
            "knn"=numericInput("mod2_k_knn", 
@@ -1314,6 +1383,7 @@ server <- function(input, output,session) {
     })
     
   })   
+  
   
   
   
@@ -1531,6 +1601,41 @@ server <- function(input, output,session) {
     
     D
   }) 
+  
+  #Filtration section
+  observeEvent(input$mod2_go_filter, {
+    if (input$mod2_choice_filter == "mod2_col") {
+      selected_values <- input$mod2_filter_col
+      
+      # Construct logical expression based on selected values
+      filter_expr <- paste0("colData(D())$", input$mod2_samp1_select, " %in% c(", paste0("'", selected_values, "'", collapse = ","), ")")
+      
+      # Evaluate the filter expression
+      filtered_D <- mt_modify_filter_samples(D = D(),
+                                             filter = eval(parse(text = filter_expr)))
+      
+      if (identical(filtered_D, D())) {
+        # Filtration unsuccessful
+        showModal(modalDialog(
+          title = "Filtration Unsuccessful",
+          "No samples were filtered based on the selected criteria.",
+          easyClose = TRUE
+        ))
+      } else {
+        # Filtration successful
+        showModal(modalDialog(
+          title = "Filtration Successful",
+          "Samples were successfully filtered based on the selected criteria.",
+          easyClose = TRUE
+        ))
+      }
+    }
+    
+    # Use the filtered D for further processing or display
+    # ...
+  })
+  
+  
   
   
   
