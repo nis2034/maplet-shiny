@@ -1,4 +1,3 @@
-
 rm(list=ls())
 
 ################################################################################
@@ -799,7 +798,7 @@ server <- function(input, output,session) {
   #  file_content <- readLines(file_path)
   #  print("whyyyy")
   #  se <- readRDS(file_path)
-    
+  
   #  return(se)
   #}
   tryCatch({
@@ -811,8 +810,8 @@ server <- function(input, output,session) {
       se <- readRDS(file_path)
       #se2 <- readRDS("se_object.rds")
       #output$mod0_assay_display <- renderPrint(assay(se2))
-
-        showModal(
+      
+      showModal(
         modalDialog(
           title = "Success",
           "SE object was created successfully. The assay data is printed for your reference. Please proceed to the next steps of the pipeline in the Navigation Bar.",
@@ -820,7 +819,7 @@ server <- function(input, output,session) {
           footer = NULL
         )
       )
-        return(se)
+      return(se)
     })
   },
   error = function(e) {
@@ -1492,7 +1491,7 @@ server <- function(input, output,session) {
     if(input$mod2_norm_type == "probabilistic quotient"){
       
       D <- D %>%
-        mt_pre_trans_exp() %>%
+        #mt_pre_trans_exp() %>% commenting for simulated_data
         #mt_reporting_heading(heading = "STEP1") %>%
         mt_pre_norm_quot(feat_max = (input$mod2_norm_feat_max)/100, ref_samples = (!!sym(input$mod2_reference_samp) == input$mod2_reference_val)) %>%
         #mt_reporting_heading(heading = "STEP2") %>%
@@ -1501,13 +1500,13 @@ server <- function(input, output,session) {
     {
       
       D <- D %>%
-        mt_pre_trans_exp() %>%
+        #mt_pre_trans_exp() %>% simulated data
         mt_pre_norm_external(col_name=input$mod2_ext_norm)
     }
     if(input$mod2_trans_log){
       
       D <- D %>%
-        mt_pre_trans_exp() %>%
+        # mt_pre_trans_exp() %>% simulated_data
         mt_pre_trans_log()
     }
     
@@ -1874,6 +1873,7 @@ server <- function(input, output,session) {
                      hover = input$mod3_select_hover
       )
     } else if (mod3_input_object()[1]=="umap"){
+      print("true")
       mod3_plots_umap(D = D_norm(),
                       scale_data = mod3_input_object()[3],  
                       color = mod3_input_object()[2],
@@ -1905,41 +1905,17 @@ server <- function(input, output,session) {
   
   # Define rendering logic of control widgets in Module-All Results Explorer(coded as mod1) ------------------------
   
-  #obj_name <- reactive({ 
-  #  obj <- get_obj_name(D = D_differ())
-  #  obj
-  #}). I have commented this block
+  obj_name <- reactive({ obj <- get_obj_name(D = D_differ())
   
-  obj_name <- reactive({
-    #obj_list <- data.frame(stat_name = character(length(metadata(D_differ())$results)),
-    #                       V1 = character(length(metadata(D_differ())$results)))
-    #obj_list <- data.frame(stat_name = character(length(metadata(D_differ())$results)),
-    #                       V1 = character(length(metadata(D_differ())$results)),
-    #                       V2 = character(length(metadata(D_differ())$results)),
-    #                       V3 = character(length(metadata(D_differ())$results)))
-    
-    obj_list <- data.frame()
-    
-    for (i in seq_along(metadata(D_differ())$results)) {
-      for (j in seq_along(metadata(D_differ())$results[[i]]$fun)) {
-        obj_list[i, j] <- metadata(D_differ())$results[[i]]$fun[j]
-      }
-    }
-    
-    return(obj_list)
-  })
-  
-  
+  obj})
   
   # create stat_name list dependent on radio button
   output$mod1_select_statname_ui <- renderUI({
-    # Get the obj_name() value outside of the selectInput
-    obj_name_data <- obj_name()
     selectInput("mod1_select_statname", "Select one stat name:",
                 width = "220px",
                 
                 #choices = obj_name() %>% .[.$V1 == input$mod1_radio, ] %>% dplyr::distinct(stat_name) %>% .$stat_name
-                choices = obj_name_data %>% dplyr::distinct(.$V1) 
+                choices = obj_name()$V1 %>% dplyr::distinct()
                 
     )
   })
@@ -1947,17 +1923,17 @@ server <- function(input, output,session) {
   # create object list dependent on radio button and stat_name
   output$mod1_select_object_ui <- renderUI({
     if (input$mod1_radio=="stats"){
-      div() #replacing NULL with div
+      NULL
     } else {
-      obj_name_data <- obj_name() #my added
-      print(obj_name_data)
       selectInput("mod1_select_object", "Select one object:",
                   width = "220px",
-                  choices = obj_name_data %>% .[.$stat_name == input$mod1_select_statname&.$V1==input$mod1_radio, ] %>% dplyr::distinct(V2) %>% .$V2
+                  choices = obj_name() %>% .[.$stat_name == input$mod1_select_statname&.$V1==input$mod1_radio, ] %>% dplyr::distinct(V2) %>% .$V2
+                  
       )
     }
     
   })
+  
   
   # create indicator of box plot output
   box_switch <- reactive({
@@ -1992,6 +1968,7 @@ server <- function(input, output,session) {
                                         input$mod1_select_statname,
                                         input$mod1_select_object)}
   )
+  
   
   
   
@@ -2317,6 +2294,3 @@ server <- function(input, output,session) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
-
-
-
