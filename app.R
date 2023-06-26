@@ -1324,7 +1324,13 @@ server <- function(input, output,session) {
   # Define rendering logic of outputs in Module-Pre-processing(coded as mod2) ------------------------------
   
   
+  # Define reactive values to store SE objects
+  D_missingness <- reactiveVal(NULL)
+  D_filter <- reactiveVal(NULL)
+  D_impute <- reactiveVal(NULL)
+  D_norm <- reactiveVal(NULL)
   
+  D_for_analysis <- reactiveVal()
   
   
   observeEvent(input$mod2_go_missingness,{
@@ -1335,6 +1341,9 @@ server <- function(input, output,session) {
     # })
     pmissing_list$value <- get_plots_SE(D_missingness())
     pmissing_list$length <-  pmissing_list$value %>% length()
+    
+    # Update D_for_analysis
+    D_for_analysis(D_missingness())
     
     
     output$mod2_main_panel  <- renderUI({
@@ -1399,6 +1408,8 @@ server <- function(input, output,session) {
     pimpute_list$value <- get_plots_SE_preprocess(D_impute(), title = c("Original","After imputation"))
     pimpute_list$length <-  pimpute_list$value %>% length()
     
+    # Update D_for_analysis
+    D_for_analysis(D_impute())
     
     output$mod2_main_panel  <- renderUI({
       
@@ -1457,6 +1468,9 @@ server <- function(input, output,session) {
     
     pnorm_list$value <- get_plots_SE_preprocess(D_norm(), title = c("Original","After normalization"))
     pnorm_list$length <-  pnorm_list$value %>% length()
+    
+    # Update D_for_analysis
+    D_for_analysis(D_norm())
     
     
     output$mod2_main_panel  <- renderUI({
@@ -1519,16 +1533,18 @@ server <- function(input, output,session) {
       mt_reporting_heading(heading = "Normalization", lvl = 2) %>%
       mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column_mod2), title = "Original", plot_logged = T) %>%
       {.}
-    
-    
-    
-    
+   
     ## return D
     D
   })
   
+  
+
+  
+    
   D_impute <- reactive({ 
-    D <- D_missingness()
+
+    D <- D_for_analysis()
     
     
     if(input$mod2_impute_type == "Min value"){
@@ -1553,7 +1569,7 @@ server <- function(input, output,session) {
   
   D_norm <- reactive({ 
     
-    D <- D_impute() 
+    D <- D_for_analysis() 
     #print(dim(D))
     #D <- D %>%
     #  mt_pre_trans_exp()
@@ -1603,18 +1619,45 @@ server <- function(input, output,session) {
   }) 
   
   #Filtration section
+  
   observeEvent(input$mod2_go_filter, {
-    if (input$mod2_choice_filter == "mod2_col") {
+    if (input$mod2_choice_filter == "mod2_row") {
+      selected_values <- input$mod2_filter_row
+      
+      # Construct logical expression based on selected values
+      filter_expr <- paste0("rowData(D())$", input$mod2_feat1_select, " %in% c(", paste0("'", selected_values, "'", collapse = ","), ")")
+      
+      # Evaluate the filter expression
+      D_filter(mt_modify_filter_features(D = D_for_analysis(),
+                                              filter = eval(parse(text = filter_expr))))
+      
+      if (identical(filtered_D, D_for_analysis())) {
+        # Filtration unsuccessful
+        showModal(modalDialog(
+          title = "Filtration Unsuccessful",
+          "No features were filtered based on the selected criteria.",
+          easyClose = TRUE
+        ))
+      } else {
+        # Filtration successful
+        showModal(modalDialog(
+          title = "Filtration Successful",
+          "Features were successfully filtered based on the selected criteria.",
+          easyClose = TRUE
+        ))
+      }
+    } else if (input$mod2_choice_filter == "mod2_col") {
       selected_values <- input$mod2_filter_col
       
       # Construct logical expression based on selected values
       filter_expr <- paste0("colData(D())$", input$mod2_samp1_select, " %in% c(", paste0("'", selected_values, "'", collapse = ","), ")")
       
-      # Evaluate the filter expression
-      filtered_D <- mt_modify_filter_samples(D = D(),
-                                             filter = eval(parse(text = filter_expr)))
       
-      if (identical(filtered_D, D())) {
+      # Evaluate the filter expression
+      D_filter(mt_modify_filter_samples(D = D_for_analysis(),
+                                             filter = eval(parse(text = filter_expr))))
+      
+      if (identical(filtered_D, D_for_analysis())) {
         # Filtration unsuccessful
         showModal(modalDialog(
           title = "Filtration Unsuccessful",
@@ -1631,10 +1674,23 @@ server <- function(input, output,session) {
       }
     }
     
-    # Use the filtered D for further processing or display
-    # ...
   })
   
+  # Retrieve the last available SE object for further analysis
+  #D_for_analysis <- reactive({
+  #  if (!is.null(D_norm())) {
+  #    D_norm()  # Use D_norm if available
+  #  } else if (!is.null(D_impute())) {
+  #    D_impute()  # Use D_impute if available
+  #  } else if (!is.null(D_filter())) {
+  #    D_filter()  # Use D_filter if available
+  #  } else if (!is.null(D_missingness())) {
+  #    D_missingness()  # Use D_missingness if available (fallback option)
+  #  } else {
+  #    D()
+  #  }
+    
+  #})
   
   
   
@@ -1970,7 +2026,7 @@ server <- function(input, output,session) {
   # render pca/umap of mod3
   output$mod3_plot <- renderPlotly({
     session_store$mod3_plotly <- if (mod3_input_object()[1]=="pca"){
-      mod3_plots_pca(D = D_norm(),
+      mod3_plots_pca(D = D_for_analysis(),
                      scale_data = mod3_input_object()[3],
                      color = mod3_input_object()[2],
                      categorizing=mod3_input_object()[4],
@@ -1979,7 +2035,7 @@ server <- function(input, output,session) {
       )
     } else if (mod3_input_object()[1]=="umap"){
       print("true")
-      mod3_plots_umap(D = D_norm(),
+      mod3_plots_umap(D = D_for_analysis(),
                       scale_data = mod3_input_object()[3],  
                       color = mod3_input_object()[2],
                       categorizing=mod3_input_object()[4],
@@ -1987,7 +2043,7 @@ server <- function(input, output,session) {
                       hover = input$mod3_select_hover
       )
     } else
-      mod3_plots_pls(D = D_norm(),
+      mod3_plots_pls(D = D_for_analysis(),
                      subgroupvar  = input$mod3_select_subgroup,
                      # ndim = input$mod3_pls_n_dim,
                      hover = input$mod3_select_hover
@@ -2229,7 +2285,7 @@ server <- function(input, output,session) {
     
     
     # Differential analysis D
-    D <- D_norm()  %>%
+    D <- D_for_analysis()  %>%
       mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
       diff_analysis_func_tab(var=input$outcome_mod7,
                              binary=input$mod7_outcome_binary,
