@@ -1,3 +1,7 @@
+#First two comments are working
+#Differential expression separated, diff exp analaysis, correlation analysis working
+#Pathway analysis not implemented
+
 rm(list=ls())
 
 ################################################################################
@@ -500,7 +504,7 @@ ui <- fluidPage(
     # Define layout of Module-Differential Expression Analysis(coded as mod7) ----------------------------------------------------
     
     
-    tabPanel(HTML(paste("Differential", "Expression", sep = "<br/>")),
+    tabPanel(HTML(paste("Statistical", "Analyses", sep = "<br/>")),
              # Sidebar layout with input and output definitions ----
              dashboardPage(
                dashboardHeader(disable = TRUE),
@@ -528,41 +532,84 @@ ui <- fluidPage(
                      box(solidHeader = T, collapsible = T, collapsed = T,
                          title="Differential Analysis", width = "220px",
                          tags$p(HTML("Outcome variable:")),
-                         uiOutput("mod7_outcome"),
-                         checkboxInput("mod7_outcome_binary", "Binary outcome?", FALSE),
-                         checkboxInput("mod7_filt_samp", "Filter Samples?", FALSE),
+                         uiOutput("mod7_outcome_diff"),
+                         checkboxInput("mod7_outcome_binary_diff", "Binary outcome?", FALSE),
+                         checkboxInput("mod7_filt_samp_diff", "Filter Samples?", FALSE),
                          
-                         uiOutput("mod7_filt_samp_dim"),
+                         uiOutput("mod7_filt_samp_dim_diff"),
                          
                          tags$p(HTML("Type of analysis:")),
-                         selectInput("mod7_analysis_type", label = NULL,
+                         selectInput("mod7_analysis_type_diff", label = NULL,
                                      width = "220px",
-                                     choices = c("lm","pearson","spearman","kendall"),
+                                     choices = c("lm"),
                                      selected = "lm"),
                          
-                         uiOutput("mod7_dimension_ui"),
+                         uiOutput("mod7_dimension_ui_diff"),
                          
                          
                          tags$p(HTML("Multiple testing correction:")),
-                         selectInput("mod7_mult_test_method", label = NULL,
+                         selectInput("mod7_mult_test_method_diff", label = NULL,
                                      width = "220px",
                                      choices = c("BH","bonferroni","BY"),
                                      selected = "BH"),
                          tags$p(HTML("Significance threshold:")),
-                         numericInput("mod7_sig_threshold", label = NULL,
+                         numericInput("mod7_sig_threshold_diff", label = NULL,
                                       value = 0.05,
                                       min = 0,
                                       max = 1,
                                       step = 0.01,
                                       width = "220px"),
+                         
                          tags$p(HTML("Pathway aggregation in barplot:")),
-                         uiOutput("mod7_group_col_barplot"),
-                         tags$p(HTML("Barplot coloring column:")),
-                         uiOutput("mod7_color_col_barplot"),
-                         tags$p(HTML("Run to see log text of data loading, preprocessing and differential analysis. This step may cost a few seconds to run.")),
-                         actionButton("mod7_go_differ", "Run", width = "110px")
-                     )
-                     
+                         uiOutput("mod7_group_col_barplot_diff"),
+
+                         actionButton("mod7_go_diff", "Run", width = "110px")
+                     ),
+                  tags$hr(),
+                  box(solidHeader = T, collapsible = T, collapsed = T,
+                      title="Correlation Analysis", width = "220px",
+                      tags$p(HTML("Outcome variable:")),
+                      uiOutput("mod7_outcome_corr"),
+                      checkboxInput("mod7_outcome_binary_corr", "Binary outcome?", FALSE),
+
+                      
+                      tags$p(HTML("Type of analysis:")),
+                      selectInput("mod7_analysis_type_corr", label = NULL,
+                                  width = "220px",
+                                  choices = c("pearson","spearman","kendall"),
+                                  selected = "pearson"),
+                      
+                      uiOutput("mod7_dimension_ui_corr"),
+                      
+                      
+                      tags$p(HTML("Multiple testing correction:")),
+                      selectInput("mod7_mult_test_method_corr", label = NULL,
+                                  width = "220px",
+                                  choices = c("BH","bonferroni","BY"),
+                                  selected = "BH"),
+                      tags$p(HTML("Significance threshold:")),
+                      numericInput("mod7_sig_threshold_corr", label = NULL,
+                                   value = 0.05,
+                                   min = 0,
+                                   max = 1,
+                                   step = 0.01,
+                                   width = "220px"),
+                      tags$p(HTML("Pathway aggregation in barplot:")),
+                      uiOutput("mod7_group_col_barplot_corr"),
+
+                      actionButton("mod7_go_corr", "Run", width = "110px")
+                  ),
+                  tags$hr(),
+                  box(solidHeader = T, collapsible = T, collapsed = T,
+                      title="Pathway Analysis", width = "220px",
+
+                      tags$p(HTML("Pathway aggregation in barplot:")),
+                      uiOutput("mod7_group_col_barplot_path"),
+                      tags$p(HTML("Barplot coloring column:")),
+                      uiOutput("mod7_color_col_barplot"),
+                      tags$p(HTML("Run to see log text of data loading, preprocessing and differential analysis. This step may cost a few seconds to run.")),
+                      actionButton("mod7_go_path", "Run", width = "110px")
+                  )    
                      
                    ),
                    
@@ -2143,8 +2190,16 @@ server <- function(input, output,session) {
   
   
   
-  output$mod7_outcome <- renderUI({
-    selectInput("outcome_mod7", label = NULL,
+  output$mod7_outcome_diff <- renderUI({
+    selectInput("outcome_mod7_diff", label = NULL,
+                width = "220px",
+                choices = names(colData(D())),
+                selected = "GROUP_ID"
+    )
+  })
+  
+  output$mod7_outcome_corr <- renderUI({
+    selectInput("outcome_mod7_corr", label = NULL,
                 width = "220px",
                 choices = names(colData(D())),
                 selected = "GROUP_ID"
@@ -2154,20 +2209,20 @@ server <- function(input, output,session) {
   
   
   
-  output$mod7_filt_samp_dim <- renderUI({
+  output$mod7_filt_samp_dim_diff <- renderUI({
     
-    if(input$mod7_filt_samp)
+    if(input$mod7_filt_samp_diff)
     {
       list( 
-        renderUI({selectInput("mod7_samp_filter", label = "Sample Filter Variable:",
+        renderUI({selectInput("mod7_samp_filter_diff", label = "Sample Filter Variable:",
                               width = "220px",
                               choices = names(colData(D())),
                               selected = "GROUP_ID"
         )
         }),
         
-        renderUI({multiInput("mod7_filter_val", label = input$mod7_samp_filter,
-                             choices = colData(D()) %>% as.data.frame() %>% dplyr::select(input$mod7_samp_filter) %>% unique() %>% unlist() %>% as.character(),width = "350px"
+        renderUI({multiInput("mod7_filter_val_diff", label = input$mod7_samp_filter_diff,
+                             choices = colData(D()) %>% as.data.frame() %>% dplyr::select(input$mod7_samp_filter_diff) %>% unique() %>% unlist() %>% as.character(),width = "350px"
                              
         )
         })
@@ -2178,10 +2233,10 @@ server <- function(input, output,session) {
     
   })
   
-  samp_filter <- reactive({
-    if(input$mod7_filt_samp)
+  samp_filter_diff <- reactive({
+    if(input$mod7_filt_samp_diff)
     {
-      input$mod7_samp_filter
+      input$mod7_samp_filter_diff
     }
     else
       NULL
@@ -2190,13 +2245,13 @@ server <- function(input, output,session) {
   
   
   
-  output$mod7_dimension_ui <- renderUI({
-    switch(input$mod7_analysis_type,
-           "lm"=list(multiInput("mod7_covar_col_select", 
+  output$mod7_dimension_ui_diff <- renderUI({
+    switch(input$mod7_analysis_type_diff,
+           "lm"=list(multiInput("mod7_covar_col_select_diff", 
                                 label = "Select Covariates from Column Data:", 
                                 choices = names(colData(D())),width = "350px"),
                      tags$hr(),
-                     multiInput("mod7_covar_row_select", 
+                     multiInput("mod7_covar_row_select_diff", 
                                 label = "Select Covariates from Row Data:", 
                                 choices = names(rowData(D())),width = "350px")
            )
@@ -2210,8 +2265,24 @@ server <- function(input, output,session) {
   
   
   
-  output$mod7_group_col_barplot <- renderUI({
-    selectInput("group_col_barplot_mod7", label = NULL,
+  output$mod7_group_col_barplot_diff <- renderUI({
+    selectInput("group_col_barplot_mod7_diff", label = NULL,
+                width = "220px",
+                selected=NULL,
+                choices = names(rowData(D()))
+    )
+  })
+  
+  output$mod7_group_col_barplot_corr <- renderUI({
+    selectInput("group_col_barplot_mod7_corr", label = NULL,
+                width = "220px",
+                selected=NULL,
+                choices = names(rowData(D()))
+    )
+  })
+  
+  output$mod7_group_col_barplot_path <- renderUI({
+    selectInput("group_col_barplot_mod7_path", label = NULL,
                 width = "220px",
                 selected=NULL,
                 choices = names(rowData(D()))
@@ -2228,7 +2299,114 @@ server <- function(input, output,session) {
   
   # Define rendering logic of outputs in Module-Differential Expression Analysis(coded as mod7) ------------------------------
   
-  observeEvent(input$mod7_go_differ,{
+  observeEvent(input$mod7_go_diff,{
+    
+    
+    pdiffer_list$value <- get_plots_SE_differ(D_differ_tab_diff())
+    pdiffer_list$length <-  pdiffer_list$value %>% length()
+    
+    output$mod7_main_panel  <- renderUI({
+      
+      mod7_output_plotlist <-   lapply(1: pdiffer_list$length, function(i){
+        local({
+          len_j <- length(pdiffer_list$value[[i]])
+          lapply(1:(len_j), function(j) {
+            
+            plotname <- paste("Plot_differ", i,j, sep="")
+            
+            plotOutput(plotname)
+            
+          })
+        })
+        
+        
+      })
+      
+      do.call(tagList, mod7_output_plotlist)
+      
+      
+    })
+    
+    lapply(1: pdiffer_list$length, function(i){
+      local({
+        
+        len_j <- length(pdiffer_list$value[[i]])
+        
+        lapply(1:(len_j), function(j) {
+          
+          plotname <- paste("Plot_differ", i,j, sep="")
+          
+          output[[plotname]] <-
+            renderPlot({
+              #grid.force()
+              pdiffer_list$value[[i]][j]
+              
+              #print(pdiffer_list$value[[i]][j])
+              
+            })
+        })
+      })
+      
+    })
+    
+  })
+  
+  #actions for correlation analysis:
+  observeEvent(input$mod7_go_corr,{
+    
+    
+    pdiffer_list$value <- get_plots_SE_differ(D_differ_tab_corr())
+    pdiffer_list$length <-  pdiffer_list$value %>% length()
+    
+    output$mod7_main_panel  <- renderUI({
+      
+      mod7_output_plotlist <-   lapply(1: pdiffer_list$length, function(i){
+        local({
+          len_j <- length(pdiffer_list$value[[i]])
+          lapply(1:(len_j), function(j) {
+            
+            plotname <- paste("Plot_differ", i,j, sep="")
+            
+            plotOutput(plotname)
+            
+          })
+        })
+        
+        
+      })
+      
+      do.call(tagList, mod7_output_plotlist)
+      
+      
+    })
+    
+    lapply(1: pdiffer_list$length, function(i){
+      local({
+        
+        len_j <- length(pdiffer_list$value[[i]])
+        
+        lapply(1:(len_j), function(j) {
+          
+          plotname <- paste("Plot_differ", i,j, sep="")
+          
+          output[[plotname]] <-
+            renderPlot({
+              #grid.force()
+              pdiffer_list$value[[i]][j]
+              
+              #print(pdiffer_list$value[[i]][j])
+              
+            })
+        })
+      })
+      
+    })
+    
+  })
+  
+  
+  #actions for pathway analysis
+  observeEvent(input$mod7_go_path,{
     
     
     pdiffer_list$value <- get_plots_SE_differ(D_differ_tab())
@@ -2281,28 +2459,46 @@ server <- function(input, output,session) {
   })
   
   
-  D_differ_tab <- reactive({
-    
+  
+  
+  
+  
+  D_differ_tab_diff <- reactive({
     
     # Differential analysis D
     D <- D_for_analysis()  %>%
       mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
-      diff_analysis_func_tab(var=input$outcome_mod7,
-                             binary=input$mod7_outcome_binary,
-                             sample_filter = samp_filter(),
-                             filter_val = input$mod7_filter_val,
-                             covar_col_select = input$mod7_covar_col_select,
-                             covar_row_select = input$mod7_covar_row_select,
-                             analysis_type=input$mod7_analysis_type,
-                             mult_test_method=input$mod7_mult_test_method,
-                             alpha=input$mod7_sig_threshold,
-                             group_col_barplot=input$group_col_barplot_mod7,
-                             color_col_barplot=input$color_col_barplot_mod7) %>%
+      diff_analysis_func_tab(var=input$outcome_mod7_diff,
+                             binary=input$mod7_outcome_binary_diff,
+                             sample_filter = samp_filter_diff(),
+                             filter_val = input$mod7_filter_val_diff,
+                             covar_col_select = input$mod7_covar_col_select_diff,
+                             covar_row_select = input$mod7_covar_row_select_diff,
+                             analysis_type=input$mod7_analysis_type_diff,
+                             mult_test_method=input$mod7_mult_test_method_diff,
+                             alpha=input$mod7_sig_threshold_diff,
+                             group_col_barplot=input$group_col_barplot_mod7_diff) %>%
       {.}
     ## return D
     D
   })
   
+  
+  D_differ_tab_corr <- reactive({
+    
+    # Differential analysis D
+    D <- D_for_analysis()  %>%
+      mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
+      diff_analysis_func_tab(var=input$outcome_mod7_corr,
+                             binary=input$mod7_outcome_binary_corr,
+                             analysis_type=input$mod7_analysis_type_corr,
+                             mult_test_method=input$mod7_mult_test_method_corr,
+                             alpha=input$mod7_sig_threshold_corr,
+                             group_col_barplot=input$group_col_barplot_mod7_corr) %>%
+      {.}
+    ## return D
+    D
+  })
   
   
   
