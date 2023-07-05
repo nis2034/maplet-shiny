@@ -1,6 +1,7 @@
-#First two comments are working
+#All 3 commenst are working
 #Differential expression separated, diff exp analaysis, correlation analysis working
-#Pathway analysis not implemented
+#Partial Correlation working
+# Pathway enrichment not working: object fc not found
 
 rm(list=ls())
 
@@ -560,8 +561,8 @@ ui <- fluidPage(
                                       step = 0.01,
                                       width = "220px"),
                          
-                         tags$p(HTML("Pathway aggregation in barplot:")),
-                         uiOutput("mod7_group_col_barplot_diff"),
+                         #tags$p(HTML("Pathway aggregation in barplot:")),
+                         #uiOutput("mod7_group_col_barplot_diff"),
 
                          actionButton("mod7_go_diff", "Run", width = "110px")
                      ),
@@ -594,14 +595,24 @@ ui <- fluidPage(
                                    max = 1,
                                    step = 0.01,
                                    width = "220px"),
-                      tags$p(HTML("Pathway aggregation in barplot:")),
-                      uiOutput("mod7_group_col_barplot_corr"),
+                      #tags$p(HTML("Pathway aggregation in barplot:")),
+                      #uiOutput("mod7_group_col_barplot_corr"),
 
                       actionButton("mod7_go_corr", "Run", width = "110px")
                   ),
                   tags$hr(),
                   box(solidHeader = T, collapsible = T, collapsed = T,
                       title="Pathway Analysis", width = "220px",
+                      tags$p(HTML("Outcome variable:")),
+                      uiOutput("mod7_outcome_path"),
+                      
+                      tags$p(HTML("Significance threshold:")),
+                      numericInput("mod7_sig_threshold_path", label = NULL,
+                                   value = 0.05,
+                                   min = 0,
+                                   max = 1,
+                                   step = 0.01,
+                                   width = "220px"),
 
                       tags$p(HTML("Pathway aggregation in barplot:")),
                       uiOutput("mod7_group_col_barplot_path"),
@@ -609,7 +620,21 @@ ui <- fluidPage(
                       uiOutput("mod7_color_col_barplot"),
                       tags$p(HTML("Run to see log text of data loading, preprocessing and differential analysis. This step may cost a few seconds to run.")),
                       actionButton("mod7_go_path", "Run", width = "110px")
-                  )    
+                  ),
+                  tags$hr(),
+                  box(solidHeader = T, collapsible = T, collapsed = T,
+                      title="Partial Correlation Network", width = "220px",
+                      tags$p(HTML("Stat Name")),
+                      uiOutput("mod7_stat_name"),
+                      actionButton("mod7_go_partial_corr", "Run", width = "110px")
+                  ),
+                  tags$hr(),
+                  box(solidHeader = T, collapsible = T, collapsed = T,
+                      title="Pathway Enrichment", width = "220px",
+                      #tags$p(HTML("Stat Name")),
+                      #uiOutput("mod7_stat_name"),
+                      actionButton("mod7_go_path_enrich", "Run", width = "110px")
+                  )
                      
                    ),
                    
@@ -1678,7 +1703,7 @@ server <- function(input, output,session) {
       D_filter(mt_modify_filter_features(D = D_for_analysis(),
                                               filter = eval(parse(text = filter_expr))))
       
-      if (identical(filtered_D, D_for_analysis())) {
+      if (identical(D_filter, D_for_analysis())) {
         # Filtration unsuccessful
         showModal(modalDialog(
           title = "Filtration Unsuccessful",
@@ -1704,7 +1729,7 @@ server <- function(input, output,session) {
       D_filter(mt_modify_filter_samples(D = D_for_analysis(),
                                              filter = eval(parse(text = filter_expr))))
       
-      if (identical(filtered_D, D_for_analysis())) {
+      if (identical(D_filter, D_for_analysis())) {
         # Filtration unsuccessful
         showModal(modalDialog(
           title = "Filtration Unsuccessful",
@@ -2206,6 +2231,22 @@ server <- function(input, output,session) {
     )
   })
   
+  output$mod7_outcome_path <- renderUI({
+    selectInput("outcome_mod7_path", label = NULL,
+                width = "220px",
+                choices = names(colData(D())),
+                selected = "GROUP_ID"
+    )
+  })
+  
+  output$mod7_stat_name <- renderUI({
+    selectInput("stat_name_mod7", label = NULL,
+                width = "220px",
+                choices = c("GGM","pcor"),
+                selected = NULL
+    )
+  })
+  
   
   
   
@@ -2265,21 +2306,21 @@ server <- function(input, output,session) {
   
   
   
-  output$mod7_group_col_barplot_diff <- renderUI({
-    selectInput("group_col_barplot_mod7_diff", label = NULL,
-                width = "220px",
-                selected=NULL,
-                choices = names(rowData(D()))
-    )
-  })
+  #output$mod7_group_col_barplot_diff <- renderUI({
+  #  selectInput("group_col_barplot_mod7_diff", label = NULL,
+  #              width = "220px",
+  #              selected=NULL,
+  #              choices = names(rowData(D()))
+  #  )
+  #})
   
-  output$mod7_group_col_barplot_corr <- renderUI({
-    selectInput("group_col_barplot_mod7_corr", label = NULL,
-                width = "220px",
-                selected=NULL,
-                choices = names(rowData(D()))
-    )
-  })
+  #output$mod7_group_col_barplot_corr <- renderUI({
+  #  selectInput("group_col_barplot_mod7_corr", label = NULL,
+  #              width = "220px",
+  #              selected=NULL,
+  #              choices = names(rowData(D()))
+  #  )
+  #})
   
   output$mod7_group_col_barplot_path <- renderUI({
     selectInput("group_col_barplot_mod7_path", label = NULL,
@@ -2409,7 +2450,7 @@ server <- function(input, output,session) {
   observeEvent(input$mod7_go_path,{
     
     
-    pdiffer_list$value <- get_plots_SE_differ(D_differ_tab())
+    pdiffer_list$value <- get_plots_SE_differ(D_differ_tab_path())
     pdiffer_list$length <-  pdiffer_list$value %>% length()
     
     output$mod7_main_panel  <- renderUI({
@@ -2459,13 +2500,77 @@ server <- function(input, output,session) {
   })
   
   
+  #actions for partial correlation
+  observeEvent(input$mod7_go_partial_corr,{
+    
+    
+    pdiffer_list$value <- get_plots_SE(D_differ_partial_corr())
+    pdiffer_list$length <-  pdiffer_list$value %>% length()
+    
+    output$mod7_main_panel  <- renderUI({
+      
+      mod7_output_plotlist <-   lapply(1: pdiffer_list$length, function(i){
+        local({
+          len_j <- length(pdiffer_list$value[[i]])
+          lapply(1:(len_j), function(j) {
+            
+            plotname <- paste("Plot_differ", i,j, sep="")
+            
+            plotOutput(plotname)
+            
+          })
+        })
+        
+        
+      })
+      
+      do.call(tagList, mod7_output_plotlist)
+      
+      
+    })
+    
+    lapply(1: pdiffer_list$length, function(i){
+      local({
+        
+        len_j <- length(pdiffer_list$value[[i]])
+        
+        lapply(1:(len_j), function(j) {
+          
+          plotname <- paste("Plot_differ", i,j, sep="")
+          
+          output[[plotname]] <-
+            renderPlot({
+              #grid.force()
+              pdiffer_list$value[[i]][j]
+              
+              #print(pdiffer_list$value[[i]][j])
+              
+            })
+        })
+      })
+      
+    })
+    
+  })
   
   
+  #actions for partial correlation
+  observeEvent(input$mod7_go_path_enrich, {
+    # Get the pathway enrichment results
+    print(D_path_enrich())
+    enrichment_results <- metadata(D_path_enrich())$pathways$enrichment_results
+    
+    # Display the results in the desired output element
+    output$mod7_main_panel <- renderDataTable({
+      datatable(enrichment_results)
+    })
+  })
   
   
+  # Differential analysis D
   D_differ_tab_diff <- reactive({
     
-    # Differential analysis D
+    
     D <- D_for_analysis()  %>%
       mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
       diff_analysis_func_tab(var=input$outcome_mod7_diff,
@@ -2477,13 +2582,14 @@ server <- function(input, output,session) {
                              analysis_type=input$mod7_analysis_type_diff,
                              mult_test_method=input$mod7_mult_test_method_diff,
                              alpha=input$mod7_sig_threshold_diff,
-                             group_col_barplot=input$group_col_barplot_mod7_diff) %>%
+                             group_col_barplot=input$group_col_barplot_mod7_path) %>%
       {.}
     ## return D
     D
   })
   
   
+  # Correlation analysis D
   D_differ_tab_corr <- reactive({
     
     # Differential analysis D
@@ -2494,11 +2600,63 @@ server <- function(input, output,session) {
                              analysis_type=input$mod7_analysis_type_corr,
                              mult_test_method=input$mod7_mult_test_method_corr,
                              alpha=input$mod7_sig_threshold_corr,
-                             group_col_barplot=input$group_col_barplot_mod7_corr) %>%
+                             group_col_barplot=input$group_col_barplot_mod7_path) %>%
       {.}
     ## return D
     D
   })
+  
+  # Pathway analysis D
+  D_differ_tab_path <- reactive({
+    
+    
+    D <- D_for_analysis()  %>%
+      mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
+      diff_analysis_func_tab(var=input$outcome_mod7_path,
+                             alpha=input$mod7_sig_threshold_path,
+                             group_col_barplot=input$group_col_barplot_mod7_path,
+                             color_col_barplot = input$color_col_barplot_mod7) %>%
+      {.}
+    ## return D
+    D
+  })
+  
+  # Partial Correlation Network D
+  D_differ_partial_corr <- reactive({
+    
+    
+    D <- D_for_analysis()  %>%
+      mt_reporting_heading(heading = "Partial Correlation Network", lvl = 2) %>%
+      mt_stats_cormat_genenet(stat_name = input$stat_name_mod7) %>%
+      mt_plots_heatmap() %>%
+      mt_post_multtest(stat_name = input$stat_name_mod7, method = "BH") %>%
+      {.}
+    ## return D
+    D
+  })
+  
+  #Pathway enrichment D
+  D_path_enrich <- reactive({
+    
+    
+    D <- D_differ_tab_diff()  %>%
+      mt_anno_pathways_hmdb_new(in_col = "HMDb",
+                                out_col = "kegg_db",
+                                pwdb_name = "KEGG",
+                                db_dir = system.file("extdata", "precalc/hmdb", package = "maplet")) %>% 
+      #mt_stats_univ_lm(formula = as.formula(sprintf("~  %s",input$outcome_mod7_diff)),
+      #                 stat_name  = "comp",
+      #                 n_cores     = 1) %>%
+      # add multiple testing correction
+      mt_post_multtest(stat_name = sprintf("~  %s%s Analysis",input$outcome_mod7_diff, replace(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = ""), is.null(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = "")),"")), method = "BH") %>%
+      mt_stats_pathway_enrichment(pw_col = "kegg_db",
+                                  stat_name = sprintf("~  %s%s Analysis",input$outcome_mod7_diff, replace(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = ""), is.null(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = "")),"")),
+                                  cutoff = 0.4) %>%
+      {.}
+    ## return D
+    D
+  })
+  
   
   
   
