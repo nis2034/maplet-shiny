@@ -1,7 +1,7 @@
-#All 3 commenst are working
+#All 3 comments are working
 #Differential expression separated, diff exp analaysis, correlation analysis working
 #Partial Correlation working
-# Pathway enrichment not working: object fc not found
+# Pathway enrichment also working: need to generatize and remove hard-coding
 
 rm(list=ls())
 
@@ -651,7 +651,10 @@ ui <- fluidPage(
                      br(),
                      br(),
                      #fluidRow(column(width = 12, uiOutput("mod7_main_panel")))
-                     uiOutput("mod7_main_panel")
+                     uiOutput("mod7_main_panel"),
+                     br(),
+                     br(),
+                     DTOutput("mod7_main_panel_2")
                    )
                  )
                  
@@ -2557,11 +2560,12 @@ server <- function(input, output,session) {
   #actions for partial correlation
   observeEvent(input$mod7_go_path_enrich, {
     # Get the pathway enrichment results
-    print(D_path_enrich())
-    enrichment_results <- metadata(D_path_enrich())$pathways$enrichment_results
+    print(D_final_enrich())
+    enrichment_results <- metadata(D_final_enrich())$pathways$enrichment_results
     
+    print(class(enrichment_results))
     # Display the results in the desired output element
-    output$mod7_main_panel <- renderDataTable({
+    output$mod7_main_panel_2 <- renderDT({
       datatable(enrichment_results)
     })
   })
@@ -2573,7 +2577,7 @@ server <- function(input, output,session) {
     
     D <- D_for_analysis()  %>%
       mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
-      diff_analysis_func_tab(var=input$outcome_mod7_diff,
+      diff_analysis_func_tab_new(var=input$outcome_mod7_diff,
                              binary=input$mod7_outcome_binary_diff,
                              sample_filter = samp_filter_diff(),
                              filter_val = input$mod7_filter_val_diff,
@@ -2581,8 +2585,7 @@ server <- function(input, output,session) {
                              covar_row_select = input$mod7_covar_row_select_diff,
                              analysis_type=input$mod7_analysis_type_diff,
                              mult_test_method=input$mod7_mult_test_method_diff,
-                             alpha=input$mod7_sig_threshold_diff,
-                             group_col_barplot=input$group_col_barplot_mod7_path) %>%
+                             alpha=input$mod7_sig_threshold_diff) %>%
       {.}
     ## return D
     D
@@ -2595,12 +2598,11 @@ server <- function(input, output,session) {
     # Differential analysis D
     D <- D_for_analysis()  %>%
       mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
-      diff_analysis_func_tab(var=input$outcome_mod7_corr,
+      diff_analysis_func_tab_new(var=input$outcome_mod7_corr,
                              binary=input$mod7_outcome_binary_corr,
                              analysis_type=input$mod7_analysis_type_corr,
                              mult_test_method=input$mod7_mult_test_method_corr,
-                             alpha=input$mod7_sig_threshold_corr,
-                             group_col_barplot=input$group_col_barplot_mod7_path) %>%
+                             alpha=input$mod7_sig_threshold_corr) %>%
       {.}
     ## return D
     D
@@ -2639,25 +2641,46 @@ server <- function(input, output,session) {
   D_path_enrich <- reactive({
     
     
-    D <- D_differ_tab_diff()  %>%
+    D <- D_differ_tab_diff() %>%
       mt_anno_pathways_hmdb_new(in_col = "HMDb",
                                 out_col = "kegg_db",
                                 pwdb_name = "KEGG",
-                                db_dir = system.file("extdata", "precalc/hmdb", package = "maplet")) %>% 
+                                db_dir = system.file("extdata", "precalc/hmdb", package = "maplet")) %>%
+      mt_anno_pathways_remove_redundant(feat_col = "HMDb", pw_col = "kegg_db") %>%
+      #mt_pre_filter_missingness(feat_max=0.2) %>%
+      #mt_pre_filter_missingness(samp_max=0.1) %>%
+      # batch correction by variable BATCH_MOCK
+      #mt_pre_batch_median(batch_col = "BATCH") %>%
+      # quotient normalization
+      #mt_pre_norm_quot() %>%
+      # logging
+      #mt_pre_trans_log() %>%
+      # KNN imputation
+      #mt_pre_impute_knn() %>%
+      
+      #D_differ_tab_diff()  %>%
       #mt_stats_univ_lm(formula = as.formula(sprintf("~  %s",input$outcome_mod7_diff)),
       #                 stat_name  = "comp",
       #                 n_cores     = 1) %>%
+      
+      #mt_post_fold_change(stat_name = "comp") %>%
       # add multiple testing correction
-      mt_post_multtest(stat_name = sprintf("~  %s%s Analysis",input$outcome_mod7_diff, replace(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = ""), is.null(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = "")),"")), method = "BH") %>%
-      mt_stats_pathway_enrichment(pw_col = "kegg_db",
-                                  stat_name = sprintf("~  %s%s Analysis",input$outcome_mod7_diff, replace(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = ""), is.null(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = "")),"")),
-                                  cutoff = 0.4) %>%
+      #mt_post_multtest(stat_name = "comp", method = "BH") %>%
+
+      #mt_stats_pathway_enrichment(pw_col = "kegg_db",
+      #                            stat_name = sprintf("~  %s%s Analysis",input$outcome_mod7_diff, replace(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = ""), is.null(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = "")),"")),
+      #                            cutoff = 0.4) %>%
       {.}
     ## return D
     D
   })
   
-  
+  D_final_enrich <- reactive({
+    D_path_enrich() %>%
+      mt_stats_pathway_enrichment_new(pw_col = "kegg_db",
+                                      stat_name = sprintf("~  %s%s Analysis",input$outcome_mod7_diff, replace(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = ""), is.null(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = "")),"")),
+                                  cutoff = 0.4)
+  })
   
   
   

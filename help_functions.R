@@ -473,6 +473,86 @@ print("samp fileter")
   
   return(D)
 }
+
+
+
+# SE generating function for for DE part of mod7
+diff_analysis_func_tab_new <- function(D,
+                                   var,
+                                   binary=F,
+                                   sample_filter = NULL,
+                                   filter_val =NULL,
+                                   covar_col_select = NULL,
+                                   covar_row_select = NULL,
+                                   analysis_type="lm",
+                                   mult_test_method="BH",
+                                   alpha=0.05){
+  
+  
+  
+  print("samp fileter")
+  print(sample_filter)
+  
+  print(filter_val)
+  if(is.null(covar_col_select) && is.null(covar_row_select))
+  {
+    covar = NULL
+  } else
+  {
+    covar <- paste("+", paste(c(covar_row_select,covar_col_select), collapse = "+"), sep = "")
+  }
+  D %<>%
+    mt_reporting_heading(heading = sprintf("%s Differential Analysis",var), lvl = 2) %>%
+    {.}
+  
+  if(analysis_type=="lm" ){ 
+    if (!is.null(sample_filter))
+    {
+      
+      D %<>%
+        mt_stats_univ_lm(formula = as.formula(sprintf("~  %s%s",var, replace(covar, is.null(covar),""))), stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+                         samp_filter = (!!sym(sample_filter) %in% filter_val)) %>%
+        
+        {.}
+    }else{
+      D %<>%
+        mt_stats_univ_lm(formula = as.formula(sprintf("~  %s%s",var, replace(covar, is.null(covar),""))), stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),""))) %>%
+        
+        {.}
+    }
+  }
+  
+  else{
+    D %<>%
+      mt_stats_univ_cor(in_col = var, stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),method = analysis_type) %>%
+      {.}
+  }
+  
+  if(binary){
+    D %<>%
+      mt_post_fold_change(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")))
+  }
+  D %<>%
+    mt_post_multtest(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")), method = mult_test_method) %>%
+    mt_reporting_stats(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")), stat_filter = p.adj < alpha) %>%
+    mt_plots_volcano(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+                     x = !!sym(ifelse(binary,"fc","statistic")),
+                     feat_filter = p.adj < alpha,
+                     color = p.adj < alpha) %>%
+    mt_plots_box_scatter(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+                         x = !!sym(var),
+                         plot_type = ifelse(binary,"box","scatter"),
+                         feat_filter = p.adj < alpha,
+                         feat_sort = p.value,
+                         annotation = "{sprintf('P-value: %.2e', p.value)}\nP.adj: {sprintf('%.2e', p.adj)}") %>%
+    {.}
+  
+  return(D)
+}
+
+
+
+
 # get the volcano plot in mod2--------------------
 mod2_plot_vol <- function(D, inputs, legend_name, d, pwvar, alpha) {
   # Get volcano data set if the plot1 is null
@@ -912,6 +992,96 @@ mt_anno_pathways_hmdb_new <- function(D,
   #  mti_generate_result(
   #    funargs = funargs,
   #    logtxt = sprintf('added pathway annotations using the %s pathway database', pwdb_name)
+  #  )
+  
+  D
+}
+
+
+mt_stats_pathway_enrichment_new <- function(D, stat_name, pw_col, cutoff = 0.05) {
+  
+  stopifnot("SummarizedExperiment" %in% class(D))
+  
+  meta_D <- metadata(D)
+  
+  if(!"pathways" %in% names(meta_D)) stop("'pathways' does not exist in current SummarizedExperiment input")
+  
+  # Check if given pathway column actually exists
+  if (!pw_col %in% names(meta_D$pathways)) stop(sprintf("'%s' not found in metabolite annotations.", pw))
+  
+  # have a check for wheter stat_name exists in D?
+  
+  pw_id_map <-
+    meta_D$pathways[[pw_col]] %>%
+    dplyr::distinct(ID, pathway_name)
+  
+  
+  geneset <-
+    rowData(D) %>%
+    as.data.frame() %>%
+    dplyr::select(COMP_IDstr, !!rlang::sym(pw_col)) %>%
+    dplyr::mutate(met_ID=rownames(.)) %>%
+    dplyr::filter(!!rlang::sym(pw_col) != "NULL") %>%
+    tidyr::unnest_longer(!!rlang::sym(pw_col)) %>%
+    dplyr::filter(!!rlang::sym(pw_col) != "NA") %>%
+    dplyr::distinct()
+  
+  
+  # Algorithm summary:
+  # - calculate metabolite p-values per group
+  # - adjust p-values using FDR
+  # - assign significance to adjusted p-value at 0.05 level
+  # - perform Fisher's exact test
+  # - adjust Fisher's exact test p-value
+  # - calculate mean fold change based on mean log value of cases and ctrls
+  
+  enrichment_results <-
+    mtm_get_stat_by_name(D, stat_name) %>%
+    
+    # assign significance
+    dplyr::mutate(significant = dplyr::if_else(p.adj < cutoff, TRUE, FALSE),
+                  n_total = dplyr::n(),
+                  n_total_sig = sum(significant)) %>%
+    dplyr::inner_join(geneset, by = c("var" = "met_ID")) %>%
+    dplyr::group_by(!!rlang::sym(pw_col)) %>%
+    
+    # calculate summary numbers for Fisher's test
+    dplyr::summarise(n_total = unique(n_total),
+                     n_total_sig = unique(n_total_sig),
+                     n_pw = dplyr::n(),
+                     n_pw_sig = sum(significant)) %>%
+                     #mean_fc = mean(fc)) %>%
+    dplyr::filter(n_pw >= 5) %>%
+    
+    # calculate contingency table entries
+    dplyr::mutate(s_p = n_pw_sig,
+                  ns_p = n_pw - n_pw_sig,
+                  s_np = n_total_sig - n_pw_sig,
+                  ns_np = n_total - (s_p + ns_p + s_np)) %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(p_value =
+                    stats::fisher.test(matrix(c(s_p, s_np, ns_p, ns_np), nrow = 2)) %>%
+                    .$p.value) %>%
+    dplyr::ungroup() %>%
+    dplyr::rename(ID = !!rlang::sym(pw_col)) %>%
+    dplyr::left_join(pw_id_map, by = "ID") %>%
+    dplyr::transmute(pathway_name,
+                     pathway_ID = ID,
+                     p_value,
+                     p_value_adjusted = stats::p.adjust(p_value, method = "fdr")) %>%
+                     #mean_foldchange = mean_fc) %>%
+    dplyr::arrange(p_value)
+  
+  metadata(D)$pathways$enrichment_results <-
+    dplyr::as_tibble(enrichment_results)
+  
+  
+  #funargs <- mti_funargs()
+  #D %<>%
+  #  mti_generate_result(
+  #    funargs = funargs,
+  #    logtxt = sprintf("performed pathway enrichment on %s pathways using Fihser's exact test",
+  #                     nrow(enrichment_results))
   #  )
   
   D
