@@ -1086,3 +1086,78 @@ mt_stats_pathway_enrichment_new <- function(D, stat_name, pw_col, cutoff = 0.05)
   
   D
 }
+
+
+
+mt_plots_sample_boxplot_new <- function(D,
+                                    title = "Sample boxplot",
+                                    show_legend = TRUE,
+                                    ylabel = "Feature concentrations",
+                                    plot_logged = FALSE,
+                                    ggadd = NULL,
+                                    ...) {
+  
+  # validate arguments
+  stopifnot("SummarizedExperiment" %in% class(D))
+  
+  # get argument names from dots
+  n <- sapply(as.list(substitute(list(...)))[-1L], deparse)
+  dot_args <- names(n)
+  
+  # check for defunct argument names
+  if ("plottitle" %in% dot_args) stop("You used the old MT naming convention plottitle. Should be: title")
+  if ("legend" %in% dot_args) stop("You used the old MT naming convention legend. Should be: show_legend")
+  if ("manual_ylab" %in% dot_args) stop("You used the old MT naming convention manual_ylab. Should be: ylabel")
+  if ("manual_ylabel" %in% dot_args) stop("You used the old MT naming convention manual_ylabel. Should be: ylabel")
+  if ("logged" %in% dot_args) stop("You used the old MT naming convention logged. Should be: plot_logged")
+  
+  # plot_logged?
+  Dplot = D
+  if (plot_logged) {
+    assay(Dplot) <- log2(assay(Dplot))
+    ylabel = sprintf("%s [log2]", ylabel)
+  }
+  
+  # merge with sample annotations, only keep the ones that were actually used
+  cd <- Dplot %>% colData() %>% as.data.frame() %>% tibble::rownames_to_column("merge.primary")
+  keep <- c(mti_extract_variables(quos(...)), "merge.primary")
+  cd <- cd[, colnames(cd) %in% keep, drop = FALSE]
+  df <- cbind(cd, t(assay(Dplot)))
+  
+  # generate ggplot
+  p <- df %>% tidyr::gather(metab, value, dplyr::one_of(rownames(Dplot))) %>%
+    ggplot(aes(x = merge.primary, y = value, ...)) +
+    geom_boxplot() +
+    ylab(ylabel) +
+    ggtitle(title) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  
+  # remove legend?
+  if (!show_legend) p = p + theme(legend.position = "none")
+  
+  # add custom elements?
+  if (!is.null(ggadd)) p <- p + ggadd
+  
+  # Convert ggplot object to plotly object
+  interactive_plot <- plotly::ggplotly(p)
+  
+  # Return the interactive plot
+  interactive_plot
+}
+
+
+
+mti_extract_variables <- function(lst) {
+  # filter down only to the variables needed for plotting
+  # need to parse x and ... list
+  # browser()
+  # q <- quos(...)
+  vars = c()
+  if (length(q) > 0) {
+    vars <- lst %>% unlist() %>% lapply(function(x){x %>% all.vars()}) %>% unlist() %>% as.vector()
+  }
+  vars <- unique(vars)
+  
+  # return
+  vars
+}

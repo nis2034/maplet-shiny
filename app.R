@@ -1409,66 +1409,82 @@ server <- function(input, output,session) {
   
   
   observeEvent(input$mod2_go_missingness,{
-    # define main panel for preprocessing section
-    # output$mod6_main_panel1 <- renderUI({
-    #   tagAppendAttributes(verbatimTextOutput("log_preprocess"), 
-    #                        style="white-space:pre-wrap;")
-    # })
-    pmissing_list$value <- get_plots_SE(D_missingness())
-    pmissing_list$length <-  pmissing_list$value %>% length()
-    
-    # Update D_for_analysis
+
     D_for_analysis(D_missingness())
     
+    p <- mt_plots_sample_boxplot_new(D_for_analysis(),
+                                 title = "Sample boxplot",
+                                 show_legend = TRUE,
+                                 ylabel = "Feature concentrations",
+                                 plot_logged = TRUE,
+                                 hover = input$mod5_select_hover)
+    
+    
+    interactive_plot <- plotly::style(interactive_plot, tooltip = input$mod5_select_hover)
+    interactive_plot <- plotly::event_register(interactive_plot, "plotly_hover")
     
     output$mod2_main_panel  <- renderUI({
-      
-      
-      
-      mod2_output_plotlist <-   lapply(1: pmissing_list$length, function(i){
-        local({
-          len_j <- length(pmissing_list$value[[i]])
-          lapply(1:(len_j), function(j) {
-            
-            plotname <- paste("Plot", i,j, sep="")
-            #print(paste0("The value of my variable from UI is ", plotname))
-            
-            plotOutput(plotname)
-            
-          })
-        })
-        
-        
-      })
-      
-      do.call(tagList, mod2_output_plotlist)
-      
-      
-    })
-    
-    lapply(1: pmissing_list$length, function(i){
-      local({
-        
-        len_j <- length(pmissing_list$value[[i]])
-        
-        lapply(1:(len_j), function(j) {
-          
-          plotname <- paste("Plot", i,j, sep="")
-          
-          output[[paste("Plot", i,j, sep="")]] <-
-            renderPlot({
-              #grid.force()
-              pmissing_list$value[[i]][j]
-              
-            })
-        })
-      })
-      
+      plotly::plotlyOutput("interactive_plot")
+
     })
     
   })   
   
-  
+  # observeEvent(input$mod2_go_missingness,{
+  #   
+  #   pmissing_list$value <- get_plots_SE(D_missingness())
+  #   pmissing_list$length <-  pmissing_list$value %>% length()
+  #   
+  #   # Update D_for_analysis
+  #   D_for_analysis(D_missingness())
+  #   
+  #   
+  #   output$mod2_main_panel  <- renderUI({
+  #     
+  #     
+  #     
+  #     mod2_output_plotlist <-   lapply(1: pmissing_list$length, function(i){
+  #       local({
+  #         len_j <- length(pmissing_list$value[[i]])
+  #         lapply(1:(len_j), function(j) {
+  #           
+  #           plotname <- paste("Plot", i,j, sep="")
+  #           #print(paste0("The value of my variable from UI is ", plotname))
+  #           
+  #           plotOutput(plotname)
+  #           
+  #         })
+  #       })
+  #       
+  #       
+  #     })
+  #     
+  #     do.call(tagList, mod2_output_plotlist)
+  #     
+  #     
+  #   })
+  #   
+  #   lapply(1: pmissing_list$length, function(i){
+  #     local({
+  #       
+  #       len_j <- length(pmissing_list$value[[i]])
+  #       
+  #       lapply(1:(len_j), function(j) {
+  #         
+  #         plotname <- paste("Plot", i,j, sep="")
+  #         
+  #         output[[paste("Plot", i,j, sep="")]] <-
+  #           renderPlot({
+  #             #grid.force()
+  #             pmissing_list$value[[i]][j]
+  #             
+  #           })
+  #       })
+  #     })
+  #     
+  #   })
+  #   
+  # })
   
   
   # pheatmap_list <- reactiveValues()
@@ -1532,6 +1548,8 @@ server <- function(input, output,session) {
     })
     
   })
+  
+  
   
   
   observeEvent(input$mod2_go_norm,{
@@ -1614,7 +1632,7 @@ server <- function(input, output,session) {
   })
   
   
-
+  
   
     
   D_impute <- reactive({ 
