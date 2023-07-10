@@ -1419,13 +1419,17 @@ server <- function(input, output,session) {
                                  plot_logged = TRUE,
                                  hover = input$mod5_select_hover)
     
+    interactive_plot <- plotly::ggplotly(p)
     
     interactive_plot <- plotly::style(interactive_plot, tooltip = input$mod5_select_hover)
     interactive_plot <- plotly::event_register(interactive_plot, "plotly_hover")
     
-    output$mod2_main_panel  <- renderUI({
+    output$mod2_main_panel <- renderUI({
       plotly::plotlyOutput("interactive_plot")
-
+    })
+    
+    output$interactive_plot <- plotly::renderPlotly({
+      interactive_plot
     })
     
   })   
