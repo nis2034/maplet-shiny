@@ -787,23 +787,23 @@ get_log_text <- function(D){
 
 
 # get box plots from a SE object
-get_plots_SE <- function(D){
+get_plots_SE <- function(D) {
   dt <- metadata(D)$results
- plots <- list()
- n= length(names(dt))
- j=1
-for(i in 1:n){
-    if( dt[[i]]$fun[1] =="plots" )
-    {
+  plots <- list()
+  n <- length(names(dt))
+  j <- 1
+  
+  for (i in 1:n) {
+    if (dt[[i]]$fun[1] == "plots") {
       plots[[j]] <- dt[[i]]$output
-     
-      j = j+1
-     
+      j <- j + 1
     }
-   
-  } 
+  }
+  
   plots
 }
+
+
 
 
 
@@ -1076,13 +1076,13 @@ mt_stats_pathway_enrichment_new <- function(D, stat_name, pw_col, cutoff = 0.05)
     dplyr::as_tibble(enrichment_results)
   
   
-  #funargs <- mti_funargs()
-  #D %<>%
-  #  mti_generate_result(
-  #    funargs = funargs,
-  #    logtxt = sprintf("performed pathway enrichment on %s pathways using Fihser's exact test",
-  #                     nrow(enrichment_results))
-  #  )
+  # funargs <- mti_funargs()
+  # D %<>%
+  #   mti_generate_result(
+  #     funargs = funargs,
+  #     logtxt = sprintf("performed pathway enrichment on %s pathways using Fihser's exact test",
+  #                      nrow(enrichment_results))
+  #   )
   
   D
 }
@@ -1161,3 +1161,4 @@ mti_extract_variables <- function(lst) {
   # return
   vars
 }
+

@@ -25,6 +25,8 @@ library(RColorBrewer)
 library(grid)
 library(graphics)
 library(DT)
+
+
 # refer help functions
 source("help_functions.R")
 
@@ -408,7 +410,10 @@ ui <- fluidPage(
                      # br(),
                      #br(),
                      #fluidRow(column(width = 12, uiOutput("mod6_main_panel")))
-                     uiOutput("mod2_main_panel")
+                     uiOutput("mod2_main_panel"),
+                     br(),
+                     br(),
+                     uiOutput("mod2_main_panel_part2"),
                      
                    )
                  )
@@ -631,8 +636,9 @@ ui <- fluidPage(
                   tags$hr(),
                   box(solidHeader = T, collapsible = T, collapsed = T,
                       title="Pathway Enrichment", width = "220px",
-                      #tags$p(HTML("Stat Name")),
-                      #uiOutput("mod7_stat_name"),
+                      tags$p(HTML("rowData column to use for pathway fetching. Hint: The selected column must contain HMDB metabolite
+                      identifiers")),
+                      uiOutput("mod7_in_col"),
                       actionButton("mod7_go_path_enrich", "Run", width = "110px")
                   )
                      
@@ -1408,87 +1414,186 @@ server <- function(input, output,session) {
   D_for_analysis <- reactiveVal()
   
   
+  #all 5 non-interactive graphs & only 1 interactive graph - working
   observeEvent(input$mod2_go_missingness,{
 
-    D_for_analysis(D_missingness())
+    pmissing_list$value <- get_plots_SE(D_missingness())
     
+      pmissing_list$length <-  pmissing_list$value %>% length()
+
+      # Update D_for_analysis
+      D_for_analysis(D_missingness())
+
+
+      output$mod2_main_panel  <- renderUI({
+
+
+
+        mod2_output_plotlist <-   lapply(1: pmissing_list$length, function(i){
+          local({
+            len_j <- length(pmissing_list$value[[i]])
+            lapply(1:(len_j), function(j) {
+
+              plotname <- paste("Plot", i,j, sep="")
+              #print(paste0("The value of my variable from UI is ", plotname))
+
+              plotOutput(plotname)
+
+            })
+          })
+
+
+        })
+
+        do.call(tagList, mod2_output_plotlist)
+
+
+      })
+
+      lapply(1: pmissing_list$length, function(i){
+        local({
+
+          len_j <- length(pmissing_list$value[[i]])
+
+          lapply(1:(len_j), function(j) {
+
+            plotname <- paste("Plot", i,j, sep="")
+
+            output[[paste("Plot", i,j, sep="")]] <-
+              renderPlot({
+                #grid.force()
+                pmissing_list$value[[i]][j]
+
+              })
+          })
+        })
+
+      })
+
+    D_for_analysis(D_missingness())
+  
     p <- mt_plots_sample_boxplot_new(D_for_analysis(),
                                  title = "Sample boxplot",
                                  show_legend = TRUE,
                                  ylabel = "Feature concentrations",
                                  plot_logged = TRUE,
                                  hover = input$mod5_select_hover)
-    
+  
     interactive_plot <- plotly::ggplotly(p)
-    
+  
     interactive_plot <- plotly::style(interactive_plot, tooltip = input$mod5_select_hover)
     interactive_plot <- plotly::event_register(interactive_plot, "plotly_hover")
-    
-    output$mod2_main_panel <- renderUI({
+
+    output$mod2_main_panel_part2 <- renderUI({
       plotly::plotlyOutput("interactive_plot")
     })
-    
+  
     output$interactive_plot <- plotly::renderPlotly({
       interactive_plot
     })
     
-  })   
+  })
   
+  #original version with all graphs - working
   # observeEvent(input$mod2_go_missingness,{
-  #   
+  # 
   #   pmissing_list$value <- get_plots_SE(D_missingness())
   #   pmissing_list$length <-  pmissing_list$value %>% length()
-  #   
+  # 
   #   # Update D_for_analysis
   #   D_for_analysis(D_missingness())
-  #   
-  #   
+  # 
+  # 
   #   output$mod2_main_panel  <- renderUI({
-  #     
-  #     
-  #     
+  # 
+  # 
+  # 
   #     mod2_output_plotlist <-   lapply(1: pmissing_list$length, function(i){
   #       local({
   #         len_j <- length(pmissing_list$value[[i]])
   #         lapply(1:(len_j), function(j) {
-  #           
+  # 
   #           plotname <- paste("Plot", i,j, sep="")
   #           #print(paste0("The value of my variable from UI is ", plotname))
-  #           
+  # 
   #           plotOutput(plotname)
-  #           
+  # 
   #         })
   #       })
-  #       
-  #       
+  # 
+  # 
   #     })
-  #     
+  # 
   #     do.call(tagList, mod2_output_plotlist)
-  #     
-  #     
+  # 
+  # 
   #   })
-  #   
+  # 
   #   lapply(1: pmissing_list$length, function(i){
   #     local({
-  #       
+  # 
   #       len_j <- length(pmissing_list$value[[i]])
-  #       
+  # 
   #       lapply(1:(len_j), function(j) {
-  #         
+  # 
   #         plotname <- paste("Plot", i,j, sep="")
-  #         
+  # 
   #         output[[paste("Plot", i,j, sep="")]] <-
   #           renderPlot({
   #             #grid.force()
   #             pmissing_list$value[[i]][j]
-  #             
+  # 
   #           })
   #       })
   #     })
+  # 
+  #   })
+  # 
+  # })
+  
+  #version trying to make all graphs interactive
+  # observeEvent(input$mod2_go_missingness, {
+  #   pmissing_list$value <- get_plots_SE(D_missingness())
+  #   pmissing_list$length <- length(pmissing_list$value)
+  #   
+  #   # Update D_for_analysis
+  #   D_for_analysis(D_missingness())
+  #   
+  #   output$mod2_main_panel <- renderUI({
+  #     mod2_output_plotlist <- lapply(1:pmissing_list$length, function(i) {
+  #       local({
+  #         len_j <- length(pmissing_list$value[[i]])
+  #         lapply(1:len_j, function(j) {
+  #           plotname <- paste("Plot", i, j, sep = "")
+  #           plotly::plotlyOutput(plotname, height = "400px", width = "100%")
+  #         })
+  #       })
+  #     })
   #     
+  #     do.call(tagList, mod2_output_plotlist)
   #   })
   #   
+  #   lapply(1:pmissing_list$length, function(i) {
+  #     local({
+  #       len_j <- length(pmissing_list$value[[i]])
+  #       lapply(1:len_j, function(j) {
+  #         plotname <- paste("Plot", i, j, sep = "")
+  #         output[[plotname]] <- renderPlotly({
+  #           plotly::ggplotly(pmissing_list$value[[i]][[j]])
+  #         })
+  #       })
+  #     })
+  #   })
   # })
+  
+
+  
+  
+  
+  
+  
+  
+  
   
   
   # pheatmap_list <- reactiveValues()
@@ -2363,6 +2468,14 @@ server <- function(input, output,session) {
     )
   })
   
+  output$mod7_in_col <- renderUI({
+    selectInput("in_col_mod7", label = NULL,
+                width = "220px",
+                choices = names(rowData(D())),
+                selected = "GROUP_ID"
+    )
+  })
+  
   # Define rendering logic of outputs in Module-Differential Expression Analysis(coded as mod7) ------------------------------
   
   observeEvent(input$mod7_go_diff,{
@@ -2659,12 +2772,13 @@ server <- function(input, output,session) {
     D
   })
   
+
   #Pathway enrichment D
   D_path_enrich <- reactive({
     
     
     D <- D_differ_tab_diff() %>%
-      mt_anno_pathways_hmdb_new(in_col = "HMDb",
+      mt_anno_pathways_hmdb_new(in_col = input$in_col_mod7,
                                 out_col = "kegg_db",
                                 pwdb_name = "KEGG",
                                 db_dir = system.file("extdata", "precalc/hmdb", package = "maplet")) %>%
