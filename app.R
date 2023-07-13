@@ -612,11 +612,12 @@ ui <- fluidPage(
                       uiOutput("mod7_outcome_path"),
                       
                       tags$p(HTML("Significance threshold:")),
+                      #change below to accept very small values
                       numericInput("mod7_sig_threshold_path", label = NULL,
                                    value = 0.05,
                                    min = 0,
                                    max = 1,
-                                   step = 0.01,
+                                   step = 0.01, #remove step argument
                                    width = "220px"),
 
                       tags$p(HTML("Pathway aggregation in barplot:")),
@@ -2765,7 +2766,7 @@ server <- function(input, output,session) {
     D <- D_for_analysis()  %>%
       mt_reporting_heading(heading = "Partial Correlation Network", lvl = 2) %>%
       mt_stats_cormat_genenet(stat_name = input$stat_name_mod7) %>%
-      mt_plots_heatmap() %>%
+      mt_plots_net_new(stat_name = input$stat_name_mod7) %>%
       mt_post_multtest(stat_name = input$stat_name_mod7, method = "BH") %>%
       {.}
     ## return D
