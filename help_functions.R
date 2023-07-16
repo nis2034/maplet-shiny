@@ -8,7 +8,7 @@ get_obj_name <- function(D){
   }
   
   #############################
-
+  
   ###################################
   
   
@@ -247,16 +247,16 @@ mod3_plots_umap <- function (D, title = "UMAP",
 # define PLS output function for mod3 referring 'mt_plots_pls'---------------
 mod3_plots_pls <- function (D, title = "PLS", 
                             subgroupvar,hover, ...) {
-                            
- 
- 
-
- 
+  
+  
+  
+  
+  
   p <- NULL
   
   Dplot <- D
   # subgroupvar <- "GROUP_ID"
-
+  
   
   pls_D <- autonomics:::pls(Dplot, subgroupvar,color =!!ensym(subgroupvar))
   
@@ -395,31 +395,31 @@ diff_analysis_func <- function(D,
 
 # SE generating function for Mod7
 diff_analysis_func_tab <- function(D,
-                               var,
-                               binary=F,
-                               sample_filter = NULL,
-                               filter_val =NULL,
-                               covar_col_select = NULL,
-                               covar_row_select = NULL,
-                               analysis_type="lm",
-                               mult_test_method="BH",
-                               alpha=0.05,
-                               group_col_barplot,
-                               color_col_barplot=NULL){
+                                   var,
+                                   binary=F,
+                                   sample_filter = NULL,
+                                   filter_val =NULL,
+                                   covar_col_select = NULL,
+                                   covar_row_select = NULL,
+                                   analysis_type="lm",
+                                   mult_test_method="BH",
+                                   alpha=0.05,
+                                   group_col_barplot,
+                                   color_col_barplot=NULL){
   
- 
-
-print("samp fileter")
+  
+  
+  print("samp fileter")
   print(sample_filter)
   
   print(filter_val)
   if(is.null(covar_col_select) && is.null(covar_row_select))
-   {
+  {
     covar = NULL
-   } else
-   {
+  } else
+  {
     covar <- paste("+", paste(c(covar_row_select,covar_col_select), collapse = "+"), sep = "")
-   }
+  }
   D %<>%
     mt_reporting_heading(heading = sprintf("%s Differential Analysis",var), lvl = 2) %>%
     {.}
@@ -427,21 +427,21 @@ print("samp fileter")
   if(analysis_type=="lm" ){ 
     if (!is.null(sample_filter))
     {
-   
+      
       D %<>%
         mt_stats_univ_lm(formula = as.formula(sprintf("~  %s%s",var, replace(covar, is.null(covar),""))), stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
                          samp_filter = (!!sym(sample_filter) %in% filter_val)) %>%
-                          
+        
         {.}
-     }else{
-       D %<>%
-       mt_stats_univ_lm(formula = as.formula(sprintf("~  %s%s",var, replace(covar, is.null(covar),""))), stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),""))) %>%
-      
+    }else{
+      D %<>%
+        mt_stats_univ_lm(formula = as.formula(sprintf("~  %s%s",var, replace(covar, is.null(covar),""))), stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),""))) %>%
+        
         {.}
-          }
+    }
   }
-    
-    else{
+  
+  else{
     D %<>%
       mt_stats_univ_cor(in_col = var, stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),method = analysis_type) %>%
       {.}
@@ -453,24 +453,24 @@ print("samp fileter")
   }
   D %<>%
     mt_post_multtest(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")), method = mult_test_method) %>%
-    mt_reporting_stats(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")), stat_filter = p.adj < alpha) %>%
-    mt_plots_volcano(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
-                     x = !!sym(ifelse(binary,"fc","statistic")),
-                     feat_filter = p.adj < alpha,
-                     color = p.adj < alpha) %>%
-    mt_plots_box_scatter(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
-                         x = !!sym(var),
-                         plot_type = ifelse(binary,"box","scatter"),
-                         feat_filter = p.adj < alpha,
-                         feat_sort = p.value,
-                         annotation = "{sprintf('P-value: %.2e', p.value)}\nP.adj: {sprintf('%.2e', p.adj)}") %>%
-    mt_plots_stats_pathway_bar(stat_list = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
-                               y_scale = "count",
-                               feat_filter = p.adj < alpha,
-                               group_col = group_col_barplot,
-                               color_col = color_col_barplot) %>%
+  #   mt_reporting_stats(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")), stat_filter = p.adj < alpha) %>%
+  #   mt_plots_volcano(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+  #                    x = !!sym(ifelse(binary,"fc","statistic")),
+  #                    feat_filter = p.adj < alpha,
+  #                    color = p.adj < alpha) %>%
+  #   mt_plots_box_scatter(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+  #                        x = !!sym(var),
+  #                        plot_type = ifelse(binary,"box","scatter"),
+  #                        feat_filter = p.adj < alpha,
+  #                        feat_sort = p.value,
+  #                        annotation = "{sprintf('P-value: %.2e', p.value)}\nP.adj: {sprintf('%.2e', p.adj)}") %>%
+  #   mt_plots_stats_pathway_bar(stat_list = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+  #                              y_scale = "count",
+  #                              feat_filter = p.adj < alpha,
+  #                              group_col = group_col_barplot,
+  #                              color_col = color_col_barplot) %>%
     {.}
-  
+
   return(D)
 }
 
@@ -478,15 +478,15 @@ print("samp fileter")
 
 # SE generating function for for DE part of mod7
 diff_analysis_func_tab_new <- function(D,
-                                   var,
-                                   binary=F,
-                                   sample_filter = NULL,
-                                   filter_val =NULL,
-                                   covar_col_select = NULL,
-                                   covar_row_select = NULL,
-                                   analysis_type="lm",
-                                   mult_test_method="BH",
-                                   alpha=0.05){
+                                       var,
+                                       binary=F,
+                                       sample_filter = NULL,
+                                       filter_val =NULL,
+                                       covar_col_select = NULL,
+                                       covar_row_select = NULL,
+                                       analysis_type="lm",
+                                       mult_test_method="BH",
+                                       alpha=0.05){
   
   
   
@@ -815,9 +815,10 @@ get_plots_SE_differ <- function(D){
   for(i in 1:n){
     if(dt[[i]]$fun[1] =="plots")
     {
-    
-      if((replace(dt[[i]]$fun[2], is.na(dt[[i]]$fun[2]),"") =="volcano") || (replace(dt[[i]]$fun[3],is.na(dt[[i]]$fun[3]),"") =="scatter")||(replace(dt[[i]]$fun[3], is.na(dt[[i]]$fun[3]),"") =="pathway"))
+      
+      if((replace(dt[[i]]$fun[2], is.na(dt[[i]]$fun[2]),"") =="volcano") || (replace(dt[[i]]$fun[3],is.na(dt[[i]]$fun[3]),"") =="scatter")||(replace(dt[[i]]$fun[3], is.na(dt[[i]]$fun[3]),"") =="pathway") || (replace(dt[[i]]$fun[2], is.na(dt[[i]]$fun[2]),"") =="net"))
       {
+        print("nets")
         plots[[j]] <- dt[[i]]$output
         
         j = j+1
@@ -836,9 +837,9 @@ get_plots_SE_preprocess <- function(D, title){
   for(i in 1:n){
     if(dt[[i]]$fun[1] =="plots")
     { 
-     
+      
       if (replace(dt[[i]]$args$title, is.null(dt[[i]]$args$title),"")  %in% title)
-     
+        
         
       {
         plots[[j]] <- dt[[i]]$output
@@ -866,12 +867,12 @@ get_plots_SE_preprocess <- function(D, title){
 
 
 mt_anno_pathways_hmdb_new <- function(D,
-                                  in_col,
-                                  out_col,
-                                  pwdb_name = "SMP",
-                                  db_dir = system.file("extdata", "precalc/hmdb/", package = "maplet") ,
-                                  db_file,
-                                  raw_db_outfile) {
+                                      in_col,
+                                      out_col,
+                                      pwdb_name = "SMP",
+                                      db_dir = system.file("extdata", "precalc/hmdb/", package = "maplet") ,
+                                      db_file,
+                                      raw_db_outfile) {
   
   # check arguments
   stopifnot("SummarizedExperiment" %in% class(D))
@@ -987,12 +988,12 @@ mt_anno_pathways_hmdb_new <- function(D,
   }
   
   
-  #funargs <- mti_funargs()
-  #D %<>%
-  #  mti_generate_result(
-  #    funargs = funargs,
-  #    logtxt = sprintf('added pathway annotations using the %s pathway database', pwdb_name)
-  #  )
+  funargs <- mti_funargs()
+  D %<>%
+    mti_generate_result(
+      funargs = funargs,
+      logtxt = sprintf('added pathway annotations using the %s pathway database', pwdb_name)
+    )
   
   D
 }
@@ -1050,7 +1051,7 @@ mt_stats_pathway_enrichment_new <- function(D, stat_name, pw_col, cutoff = 0.05)
                      n_total_sig = unique(n_total_sig),
                      n_pw = dplyr::n(),
                      n_pw_sig = sum(significant)) %>%
-                     #mean_fc = mean(fc)) %>%
+    #mean_fc = mean(fc)) %>%
     dplyr::filter(n_pw >= 5) %>%
     
     # calculate contingency table entries
@@ -1069,20 +1070,20 @@ mt_stats_pathway_enrichment_new <- function(D, stat_name, pw_col, cutoff = 0.05)
                      pathway_ID = ID,
                      p_value,
                      p_value_adjusted = stats::p.adjust(p_value, method = "fdr")) %>%
-                     #mean_foldchange = mean_fc) %>%
+    #mean_foldchange = mean_fc) %>%
     dplyr::arrange(p_value)
   
   metadata(D)$pathways$enrichment_results <-
     dplyr::as_tibble(enrichment_results)
   
   
-  # funargs <- mti_funargs()
-  # D %<>%
-  #   mti_generate_result(
-  #     funargs = funargs,
-  #     logtxt = sprintf("performed pathway enrichment on %s pathways using Fihser's exact test",
-  #                      nrow(enrichment_results))
-  #   )
+  funargs <- mti_funargs()
+  D %<>%
+    mti_generate_result(
+      funargs = funargs,
+      logtxt = sprintf("performed pathway enrichment on %s pathways using Fihser's exact test",
+                       nrow(enrichment_results))
+    )
   
   D
 }
@@ -1090,12 +1091,12 @@ mt_stats_pathway_enrichment_new <- function(D, stat_name, pw_col, cutoff = 0.05)
 
 
 mt_plots_sample_boxplot_new <- function(D,
-                                    title = "Sample boxplot",
-                                    show_legend = TRUE,
-                                    ylabel = "Feature concentrations",
-                                    plot_logged = FALSE,
-                                    ggadd = NULL,
-                                    ...) {
+                                        title = "Sample boxplot",
+                                        show_legend = TRUE,
+                                        ylabel = "Feature concentrations",
+                                        plot_logged = FALSE,
+                                        ggadd = NULL,
+                                        ...) {
   
   # validate arguments
   stopifnot("SummarizedExperiment" %in% class(D))
@@ -1146,6 +1147,180 @@ mt_plots_sample_boxplot_new <- function(D,
 }
 
 
+mt_plots_volcano_new <- function(D,
+                                 x = fc,
+                                 stat_name,
+                                 feat_filter = p.value < 0.05,
+                                 xlabel=gsub("~","",as.character(x)),
+                                 vline=NA,
+                                 hline,
+                                 ggadd=NULL,
+                                 ...) {
+  
+  x <- dplyr::enquo(x)
+  
+  ## check input
+  stopifnot("SummarizedExperiment" %in% class(D))
+  if(missing(stat_name))
+    stop("stat_name must be given for volcano plot")
+  
+  # get argument names from dots
+  n <- sapply(as.list(substitute(list(...)))[-1L], deparse)
+  dot_args <- names(n)
+  
+  # check for defunct argument names
+  if ("statname" %in% dot_args) stop("You used the old MT naming convention statname Should be: stat_name")
+  if ("metab_filter" %in% dot_args) stop("You used the old MT naming convention metab_filter Should be: feat_filter")
+  
+  ## rowData
+  rd <- rowData(D) %>%
+    as.data.frame() %>%
+    dplyr::mutate(var = rownames(D))
+  # remove rows not needed for plotting
+  vars <- c(mti_extract_variables(c(dplyr::enquo(x), dplyr::enquo(feat_filter), quos(...))),"var","name")
+  rd <- rd[,colnames(rd) %in% vars,drop=F]
+  
+  
+  ## stat
+  data_plot <- mtm_get_stat_by_name(D, stat_name)
+  if(quo_name(x) %in% colnames(data_plot)==F) stop(glue::glue("Column {quo_name(x)} not found in stat table."))
+  data_plot %<>% dplyr::inner_join(rd, by = "var") %>%
+    dplyr::mutate(xxx = !!x)
+  
+  ## SCALE -log10
+  reverselog_trans <- function (base = exp(1)){
+    trans <- function(x) -log(x, base)
+    inv <- function(x) base^(-x)
+    scales::trans_new(paste0("reverselog-", format(base)), trans, inv,
+                      scales::log_breaks(base = base),
+                      domain = c(1e-100, Inf))
+  }
+  
+  ## determine if and where to draw hline
+  if (!missing(hline)) {
+    hliney <- mtm_get_stat_by_name(D, stat_name) %>%
+      dplyr::inner_join(rd, by = "var") %>%
+      dplyr::mutate(xxx = !!x) %>% dplyr::filter(!!dplyr::enquo(hline)) %>% .$p.value %>% max()
+  } else {
+    hliney <- NA
+  }
+  
+  ## sanity check that there is something to plot
+  if (all(is.na(data_plot$p.value))) stop("All p-values for Volcano plot are NA")
+  
+  ## CREATE PLOT
+  p <- data_plot %>%
+    ## do plot
+    ggplot(aes(x = xxx, y = p.value)) +
+    # vline?
+    (if(!is.na(vline)){geom_vline(xintercept = c(-vline, vline), linetype='dashed', color='#F8766D')}else{NULL}) +
+    # hline?
+    (if(!is.na(hliney)){geom_hline(yintercept = hliney, linetype='dashed', color='#F8766D')}else{NULL}) +
+    # points
+    geom_point(aes(...)) +
+    scale_y_continuous(trans = reverselog_trans(10),
+                       breaks = scales::trans_breaks("log10", function(x) 10^x),
+                       labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+    labs(x = xlabel, y = "p-value") +
+    ggtitle(stat_name)
+  
+  ## ADD FEATURE LABELS
+  if(!missing(feat_filter)){
+    #mti_logstatus("add label")
+    feat_filter_q <- dplyr::enquo(feat_filter)
+    data_annotate <- data_plot %>%
+      dplyr::filter(!!feat_filter_q)
+    p <- p + ggrepel::geom_text_repel(data = data_annotate,
+                                      aes(label = name), max.overlaps = Inf)
+  }
+  
+  ## ADD AXIS GROUPS
+  d <- mtm_get_stat_by_name(D, stat_name, fullstruct=T)
+  if ("groups" %in% names(d) && length(d$groups)==2) {
+    p <- mti_add_leftright_gg(p, paste0(d$groups[1],' high'), paste0(d$groups[2],' high'))
+  }
+  
+  # add custom elements?
+  if (!is.null(ggadd)) p <- p+ggadd
+  
+  ## add status information & plot
+  funargs <- mti_funargs()
+  D %<>% 
+    mti_generate_result(
+      funargs = funargs,
+      logtxt = sprintf("volcano plot, aes: %s", mti_dots_to_str(...)),
+      output = p
+    )
+  
+  # Convert ggplot object to plotly object
+  interactive_plot <- plotly::ggplotly(p)
+  
+  # Return the interactive plot
+  interactive_plot
+  
+  
+}
+
+mti_get_setting <-  function(D, sname) {
+  # validate argument
+  stopifnot("SummarizedExperiment" %in% class(D))
+  # check if settings missing
+  if (!("settings" %in% names(metadata(D)))) {
+    # no, use default
+    # build list
+    fulllist <- mti_settings_list()
+    lst <- names(fulllist) %>% lapply(function(s){fulllist[[s]]$default})
+    names(lst) <- names(fulllist)
+  } else {
+    # yes, take from metadata
+    lst <- metadata(D)$settings
+  }
+  # error control
+  if (!(sname %in% names(lst))){stop(glue::glue("Invalid pipeline setting name: '{sname}'"))}
+  # return
+  lst[[sname]]
+}
+
+mti_add_leftright_gg <- function(gg, left, right) {
+  
+  # with backward compatibility
+  if (utils::compareVersion(as.character(utils::packageVersion("ggplot2")),"3.3.0")>=0) { # at least 3.3.0
+    # ggplot2 version >= 3.3.0
+    ggbld <- ggplot2::ggplot_build(gg)
+    xticks =  ggbld$layout$panel_params[[1]]$x$get_breaks() # needed for >=3.3.0
+    xticks.minor = ggbld$layout$panel_params[[1]]$x$get_breaks_minor() # needed for >=3.3.0
+    xlims = ggbld$layout$panel_params[[1]]$x.range
+    
+    # add positions of annotation labels
+    xticks = c(xlims[1], xticks, xlims[2])
+    # get breaks labels
+    xtlabs = ggbld$layout$panel_params[[1]]$x$get_labels() # needed for >=3.3.0
+    
+  } else {
+    # ggplot2 version < 3.3.0
+    ggbld <- ggplot2::ggplot_build(gg)
+    xticks = ggbld$layout$coord$labels(ggbld$layout$panel_params)[[1]]$x.major_source # needed for <3.3.0
+    xticks.minor = ggbld$layout$coord$labels(ggbld$layout$panel_params)[[1]]$x.minor_source # needed for <3.3.0
+    xlims = ggbld$layout$panel_params[[1]]$x.range
+    
+    # add positions of annotation labels
+    xticks = c(xlims[1], xticks, xlims[2])
+    # get breaks labels
+    xtlabs = ggbld$layout$coord$labels(ggbld$layout$panel_params)[[1]]$x.labels # needed for <3.3.0
+  }
+  
+  # align with \n
+  txt <- c(left, right)
+  txt = paste0("\n", txt)
+  xtlabs = paste0(xtlabs, "\n")
+  xtlabs = c(txt[1], xtlabs, txt[2])
+  
+  # return
+  gg + ggplot2::scale_x_continuous(breaks = xticks, labels = xtlabs, minor_breaks = xticks.minor)
+  
+}
+
+
 
 mti_extract_variables <- function(lst) {
   # filter down only to the variables needed for plotting
@@ -1166,11 +1341,11 @@ mti_extract_variables <- function(lst) {
 
 
 mt_plots_net_new <- function(D,
-                         stat_name,
-                         cor_filter = p.value < 0.05,
-                         node_coloring,
-                         html_outfile,
-                         height = 500) {
+                             stat_name,
+                             cor_filter = p.value < 0.05,
+                             node_coloring,
+                             html_outfile,
+                             height = 500) {
   
   ## check input
   stopifnot("SummarizedExperiment" %in% class(D))
@@ -1286,4 +1461,695 @@ mt_plots_net_new <- function(D,
     )
   ## return
   D
+}
+
+
+
+
+
+mti_funargs <- function(...) {
+  call <- evalq(match.call(expand.dots = FALSE), parent.frame(1))
+  formals <- evalq(formals(), parent.frame(1))
+  
+  for(i in dplyr::setdiff(names(formals), names(call)))
+    call[i] <- list( formals[[i]] )
+  
+  # assemble results
+  raw <-  as.list(match.call(sys.function(sys.parent(1)), call))
+  if(typeof(raw[[1]])=="language") raw[[1]] <- as.character(raw[[1]])[[3]]
+  if(FALSE){
+    #if(any(sapply(raw[-1],typeof)=="symbol")){
+    res <- list(
+      fun = strsplit(gsub(".*::", "", as.character(raw[[1]])), '_')[[1]],
+      args = sapply(raw[-1], function(x){if(is.symbol(x)&& as.character(x)!="."){eval.parent(x)}else{x}})
+    )
+  }else{
+    res <- list(
+      fun = strsplit(gsub(".*::", "", as.character(raw[[1]])), '_')[[1]],
+      args = raw[-1]
+    )
+  }
+  # remove "mt"
+  res$fun = res$fun[res$fun!="mt"]
+  # make sure D does not exist in args
+  res$args$D = NULL
+  # return
+  res
+  
+}
+
+mt_plots_box_scatter_new <- function(D,
+                                     x,
+                                     stat_name,
+                                     plot_type,
+                                     correct_confounder,
+                                     feat_filter = p.value < 0.05,
+                                     feat_sort = p.value,
+                                     annotation = "{sprintf('P-value: %.1e', p.value)}",
+                                     full_info = F,
+                                     text_size = 3.88,
+                                     jitter = "beeswarm",
+                                     restrict_to_used_samples = T,
+                                     ylabel=NULL,
+                                     fit_line = T,
+                                     fit_line_se = T,
+                                     ggadd = NULL,
+                                     pages = F,
+                                     ...){
+  
+  stopifnot("SummarizedExperiment" %in% class(D))
+  if(missing(x)) stop("x must be provided")
+  x <- dplyr::enquo(x)
+  
+  # get argument names from dots
+  n <- sapply(as.list(substitute(list(...)))[-1L], deparse)
+  dot_args <- names(n)
+  
+  # check for defunct argument names
+  if ("metab_filter" %in% dot_args) stop("You used the old MT naming convention metab_filter. Should be: feat_filter")
+  if ("metab_sort" %in% dot_args) stop("You used the old MT naming convention metab_sort. Should be: feat_sort")
+  if ("rows" %in% dot_args) stop("\"rows\" is no longer an acceptecd argument.")
+  if ("cols" %in% dot_args) stop("\"cols\" is no longer an accepted argument.")
+  if ("manual_ylab" %in% dot_args) stop("You used the old MT naming convention manual_ylab. Should be: ylabel")
+  if ("manual_ylabel" %in% dot_args) stop("You used the old MT naming convention manual_ylabel. Should be: ylabel")
+  if ("fitline" %in% dot_args) stop("You used the old MT naming convention fitline. Should be: fit_line")
+  if ("fitline_se" %in% dot_args) stop("You used the old MT naming convention fitline_se. Should be: fit_line_se")
+  
+  # create dummy SE so original not changed
+  Ds <- D
+  
+  ## CONFOUNDER
+  if(!missing(correct_confounder)){
+    #mti_logstatus(glue::glue("correcting for {correct_confounder}"))
+    Ds <- mti_correctConfounder(Ds, correct_confounder)
+  }
+  
+  ## rowData
+  rd <- rowData(Ds) %>%
+    as.data.frame() %>%
+    dplyr::mutate(var = rownames(Ds))
+  
+  ## stat
+  if(!missing(stat_name)){
+    stat <- maplet::mtm_get_stat_by_name(Ds, stat_name) %>%
+      dplyr::inner_join(rd, by = "var")
+  }else{
+    stat <- rd
+    ### KC: ONLY IN BOXPLOT (Why?)
+    restrict_to_used_samples <- F # not dependend on a stat
+  }
+  
+  ## FILTER FEATURES
+  ### KC: feat_filter is never not missing, should there be no default?
+  if(!missing(feat_filter)){
+    feat_filter_q <- dplyr::enquo(feat_filter)
+    stat <- stat %>%
+      dplyr::filter(!!feat_filter_q)
+    #mti_logstatus(glue::glue("filter features: {feat_filter_q} [{nrow(stat)} remaining]"))
+  }
+  
+  ## SORT FEATURES
+  ### KC: feat_sort is never not missing, should there be no default?
+  if(!missing(feat_sort)){
+    feat_sort_q <- dplyr::enquo(feat_sort)
+    stat <- stat %>%
+      dplyr::arrange(!!feat_sort_q) %>%
+      ## sort according to stat
+      dplyr::mutate(name = factor(name, levels = unique(name)))
+    #mti_logstatus(glue::glue("sorted features: {feat_sort_q}"))
+  }
+  
+  ## CREATE PLOT
+  dummy <- Ds %>%
+    mti_format_se_samplewise() %>% # NOTE: No explosion of dataset size due to active restriction - 6/2/20, JK
+    tidyr::gather(var, value, dplyr::one_of(rownames(Ds)))
+  ## filter to groups?
+  if(plot_type=="box"){
+    if (restrict_to_used_samples) {
+      filterto <- maplet::mtm_get_stat_by_name(Ds, stat_name, fullstruct=T)$samples.used
+      dummy <- dummy[filterto,]
+    }
+  }
+  
+  # check x is a column in dataset
+  mainvar <- x %>% dplyr::quo_name()
+  if(mainvar %in% colnames(dummy) == F) stop(glue::glue("No column in plot data frame with name \"{mainvar}\"."))
+  
+  if(!full_info){
+    # filter down only to the variables needed for plotting
+    # need to parse x and ... list
+    vars <- x %>% dplyr::quo_name()
+    q <- dplyr::quos(...)
+    if (length(q) > 0) {
+      vars <- c(vars, q %>% lapply(function(x){x %>% as.character() %>% gsub("~","",.)}) %>% unlist() %>% as.vector())
+    }
+    vars <- unique(vars)
+    
+    plottitle <- ifelse(missing(stat_name),"",stat_name)
+    if(plot_type=="box"){
+      # make sure the main outcome variable x is a factor
+      mainvar <-x %>% dplyr::quo_name()
+      dummy[[mainvar]] <- as.factor(dummy[[mainvar]])
+      
+      p <- dummy %>%
+        dplyr::select(dplyr::one_of(c("var","value", vars))) %>%
+        ## add feature names, but only restricted subset from statistics table
+        dplyr::inner_join(stat[,dplyr::intersect(colnames(stat),c('var','statistic','p.value','p.adj','name'))], by = "var") %>%
+        dplyr::select(-var) %>%
+        ## do plot
+        ggplot() +
+        geom_boxplot(aes(x = as.factor(!!x), y = value, ...), outlier.shape = ifelse(jitter, NA, 19)) +
+        labs(x = NULL, y = NULL) +
+        ggtitle(plottitle)
+    }else{
+      
+      p <- dummy %>%
+        dplyr::select(dplyr::one_of(c("var","value", vars))) %>%
+        ## add feature names, but only restricted subset from statistics table
+        dplyr::inner_join(stat[,c('var','statistic','p.value','p.adj','name')], by = "var") %>%
+        dplyr::select(-var) %>%
+        ## do plot
+        ggplot() +
+        ## add fit line?
+        {if (fit_line) geom_smooth(aes(x = !!x, y = value), method = "lm", se=fit_line_se, color = "black") else NULL} +
+        geom_point(aes(x = !!x, y = value, ...)) +
+        labs(x = dplyr::quo_name(x), y="feature") +
+        ggtitle(plottitle)
+      
+    }
+    
+  }else{
+    
+    if(plot_type=="box"){
+      # leave full info in
+      # can create huge data.frames
+      
+      plottitle <- ifelse(missing(stat_name),"",stat_name)
+      p <- dummy %>%
+        ## add feature names
+        dplyr::inner_join(stat, by = "var") %>%
+        ## do plot
+        ggplot() +
+        geom_boxplot(aes(x = !!x, y = value, ...), outlier.shape = ifelse(jitter, NA, 19)) +
+        labs(x = NULL, y = NULL) +
+        ggtitle(plottitle)
+      
+    }else{
+      # leave full info in
+      # can create huge data.frames
+      
+      #
+      plottitle <- ifelse(missing(stat_name),"",stat_name)
+      p <- dummy %>%
+        ## add feature names
+        dplyr::inner_join(stat, by = "var") %>%
+        ## do plot
+        ggplot() +
+        ## add fit line?
+        {if (fit_line) geom_smooth(aes(x = !!x, y = value), method = "lm", se=fit_line_se, color = "black") else NULL} +
+        geom_point(aes(x = !!x, y = value, ...)) +
+        labs(x = dplyr::quo_name(x), y="feature") +
+        ggtitle(plottitle)
+      
+    }
+    
+  }
+  
+  ### BOX PLOT SPECIFIC
+  if(plot_type=="box"){
+    ## add ylabel
+    if (!is.null(ylabel)) {
+      p <- p + ylab(ylabel)
+    } else {
+      # add label if this is logged data
+      r <- Ds %>% maplet::mtm_res_get_entries(c("pre","trans","log"))
+      if (length(r)>0) {
+        p <- p + ylab(r[[1]]$logtxt) # log text contains e.g. "log2"
+      }
+    }
+    
+    ## ADD JITTER
+    if(jitter=="beeswarm"){
+      p <- p +
+        ggbeeswarm::geom_beeswarm(aes(x = !!x, y = value, ...))
+    }else if(jitter=="jitter"){
+      p <- p +
+        geom_jitter(aes(x = !!x, y = value, ...))
+    }
+  }
+  
+  
+  ### COMMON TO BOTH PLOTS
+  ## ADD ANNOTATION
+  if(!missing(annotation)){
+    data_annotate <- stat %>%
+      dplyr::mutate(annotate = glue::glue(annotation)) %>%
+      dplyr::distinct(name, annotate)
+    p <- p + geom_text(data = data_annotate,
+                       aes(label = annotate),
+                       x = -Inf, y = Inf, hjust = -0.05, vjust = 1.05, size=text_size )
+  }
+  
+  if (!is.null(ggadd)) p <- p+ggadd
+  
+  funargs <- mti_funargs()
+  
+  
+  
+  ## SPLIT TO MULTIPLE PAGES
+  # if there is no plot, create a single empty page
+  if (length(unique(stat$name))==0) {
+    p <- list(ggplot() + geom_text(aes(x=0, y=0, label='no plots'), size=10))
+    output2 <- NULL
+    
+    D %<>%
+      mti_generate_result(
+        funargs = funargs,
+        logtxt = sprintf("Feature ",ifelse(plot_type=="box", "boxplots", "scatter plots"),", aes: %s", mti_dots_to_str(...)),
+        output = p,
+        output2 = output2
+      )
+    
+  } else if(pages) {
+    
+    npages <- ceiling(length(unique(stat$name))/8)
+    tmp <- lapply(1:npages, function(x){
+      p + ggforce::facet_wrap_paginate(.~name, scales = "free", ncol = 2, nrow = 4, page=x)
+    })
+    p <- ggpubr::ggarrange(plotlist = tmp, ncol=1)
+    p <- ggpubr::annotate_figure(p, top = ggpubr::text_grob(plottitle))
+    output2 <- ceiling(length(unique(stat$name))/2)
+    
+    D %<>%
+      mti_generate_result(
+        funargs = funargs,
+        logtxt = sprintf("Feature ",ifelse(plot_type=="box", "boxplots", "scatter plots"),", aes: %s", mti_dots_to_str(...)),
+        output = p,
+        output2 = output2
+      )
+    
+  }else {
+    p <- p + facet_wrap(.~name, scales = "free", ncol=2)
+    #p <- list(p)
+    output2 <- ceiling(length(unique(stat$name))/2)
+    
+    D %<>%
+      mti_generate_result(
+        funargs = funargs,
+        logtxt = sprintf("Feature ",ifelse(plot_type=="box", "boxplots", "scatter plots"),", aes: %s", mti_dots_to_str(...)),
+        output = list(p),
+        output2 = output2
+      )
+    
+    # Convert ggplot object to plotly object
+    interactive_plot <- plotly::ggplotly(p)
+    
+    # Return the interactive plot
+    interactive_plot
+  
+  }
+  
+  
+}
+
+mti_correctConfounder <- function(D, formula){
+  d <- D %>% mti_format_se_samplewise() # NOTE: No explosion of dataset size, no gather() - 6/2/20, JK
+  d_cor <- rownames(D) %>%
+    purrr::map_dfc(function(m){
+      f   <- stats::update.formula(formula, stringr::str_c(m, "~."))
+      mod <- stats::lm(f, data = d, na.action = na.exclude)
+      res <- stats::resid(mod)
+      res
+    }) %>%
+    stats::setNames(rownames(D)) %>%
+    as.matrix() %>% t()
+  colnames(d_cor) <- colnames(D)
+  assay(D)        <- d_cor
+  D
+}
+
+mti_format_se_samplewise <- function(D){
+  # coldata and assay cannot have overlapping names
+  # (this should be caugh earlier in the pipeline, but here is where it causes trouble)
+  inters <- intersect(colnames(colData(D)), rownames(D))
+  if (length(inters)>0) {
+    stop(sprintf("There are metabolites and colData variables with the same name: %s", paste0(inters, collapse = ", ")))
+  }
+  # cbind
+  cbind(colData(D),
+        t(assay(D))) %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column("merge.primary")
+}
+
+
+mt_plots_stats_pathway_bar_new <- function(D,
+                                       stat_list,
+                                       feat_filter = p.value < 1,
+                                       group_col = "SUB_PATHWAY",
+                                       color_col = NULL,
+                                       y_scale = "fraction",
+                                       sort_by_y = FALSE,
+                                       assoc_sign_col,
+                                       add_empty = FALSE,
+                                       keep_unmapped = FALSE,
+                                       outfile = NULL,
+                                       ggadd = NULL,
+                                       ...){
+  
+  # get argument names from dots
+  n <- sapply(as.list(substitute(list(...)))[-1L], deparse)
+  dot_args <- names(n)
+  
+  # check for defunct argument names
+  if ("stat_name" %in% dot_args) stop("You used the old MT naming convention stat_name. Should be: stat_list.")
+  if ("metab_filter" %in% dot_args) stop("You used the old MT naming convention metab_filter. Should be: feat_filter.")
+  if ("aggregate" %in% dot_args) stop("You used the old MT naming convention aggregate Should be: group_col.")
+  if ("colorby" %in% dot_args) stop("You used the old MT naming convention colorby Should be: color_col.")
+  if ("sort" %in% dot_args) stop("You used the old MT naming convention sort. Should be: sort_by_y.")
+  if ("yscale" %in% dot_args) stop("You used the old MT naming convention yscale. Should be: y_scale.")
+  if ("assoc_sign" %in% dot_args) stop("You used the old MT naming convention assoc_sign. Should be: assoc_sign_col.")
+  if ("keep.unmapped" %in% dot_args) stop("You used the old MT naming convention keep.unmapped. Should be: keep_unmapped.")
+  if ("output.file" %in% dot_args) stop("You used the old MT naming convention output.file. Should be: outfile.")
+  
+  ## check input
+  stopifnot("SummarizedExperiment" %in% class(D))
+  if(missing(stat_list) & !missing(feat_filter))
+    stop("stat_list must be given for feat_filter to work.")
+  if(missing(stat_list) & !missing(assoc_sign_col))
+    stop("stat_list must be given for assoc_sign_col to work.")
+  if(!(group_col %in% colnames(rowData(D))))
+    stop(sprintf("group_col column '%s' not found in rowData", group_col))
+  if(!is.null(color_col))
+    if(!(color_col %in% colnames(rowData(D))))
+      stop(sprintf("color_col column '%s' not found in rowData", color_col))
+  
+  ## rowData
+  rd <- rowData(D) %>%
+    as.data.frame() %>%
+    dplyr::mutate(var = rownames(D))
+  # set the nulls to unknown
+  if(keep_unmapped){
+    rd[[group_col]][which(rd[[group_col]]=="NULL")] <- "Unmapped"
+  } else{
+    rd <- rd[which(rd[[group_col]]!="NULL"), ]
+  }
+  perc <- rd[[group_col]] %>%
+    unlist %>% table(exclude = NULL) %>% as.data.frame()
+  colnames(perc) <- c("name","count")
+  
+  flag_filter <- ifelse((!missing(feat_filter)), T,F)
+  flag_sign <- ifelse((!missing(assoc_sign_col)), T,F)
+  
+  data <- lapply(stat_list %>% {names(.)=.;.}, function(ss){
+    ## subselect variables
+    if(flag_filter) {
+      feat_filter_q <- dplyr::enquo(feat_filter)
+      sel <- maplet::mtm_get_stat_by_name(D=D,name=ss) %>%
+        dplyr::filter(!!feat_filter_q) %>%
+        dplyr::filter(var %in% rd$var)
+      rd <- rd %>%
+        dplyr::filter(var %in% sel$var)
+      
+    }
+    
+    # if filtering gives an empty matrix, produce an empty df
+    if(nrow(rd)==0) {
+      data_plot <- data.frame(name=as.character(),
+                              count = as.numeric())
+      anno <- data.frame()
+      
+    } else {
+      # if assoc_sign_col given, include in data
+      if(flag_sign){
+        if(!(assoc_sign_col %in% colnames(sel))) {
+          stop(sprintf("Could not find column called %s in the statistical results called %s", assoc_sign_col, stat_list))
+        } else {
+          # reorder sel according to rd
+          sel <- sel[match(sel$var,rd$var),] %>%
+            dplyr::mutate(association=ifelse(sign(!!sym(assoc_sign_col))>0, "positive", "negative")) %>%
+            dplyr::select(var,association)
+          
+          data_plot <- data.frame(name=rd[[group_col]] %>% unlist %>% as.vector,
+                                  association=rep(sel$association, times= (rd[[group_col]] %>% sapply(length)))) %>%
+            table(exclude = NULL) %>% as.data.frame()
+          colnames(data_plot) <- c("name","association","count")
+          
+        }
+      } else {
+        # reorder sel according to rd
+        sel <- sel[match(sel$var,rd$var),] %>%
+          dplyr::select(var)
+        
+        data_plot <- rd[[group_col]] %>%
+          unlist %>% table(exclude = NULL) %>% as.data.frame()
+        colnames(data_plot) <- c("name","count")
+        
+      }
+      
+      if(add_empty){
+        # check which group_col entries are not included
+        agg <- rowData(D) %>% as.data.frame() %>% .[[group_col]] %>% unlist %>% unique
+        agg_empty <- agg[which(!(agg %in% unique(as.character(data_plot$name))))]
+        
+        # create data frame
+        empty <- data.frame(name = agg_empty, count = rep(0, times=length(agg_empty)))
+        
+        if("association" %in% colnames(data_plot)){
+          empty$association <- "positive"
+        }
+        
+        # add to data
+        data_plot %<>% dplyr::full_join(empty, by=colnames(data_plot))
+      }
+      
+      # add number of features in each pathway
+      perc <- data_plot %>% dplyr::select(name) %>%
+        dplyr::left_join(perc, by="name")
+      data_plot <- data_plot %>%
+        # add fraction variable
+        dplyr::mutate(fraction= count/perc$count)
+      
+      # add color column if not given
+      if(is.null(color_col)) {
+        color_col <- paste(group_col,"color", collapse = "_")
+        rd[[color_col]] <- "pathway"
+      }
+      
+      # create dictionary between group_col and color_col variables
+      dict <- rd %>% dplyr::select(!!sym(group_col),!!sym(color_col)) %>% tidyr::unnest_longer(col=group_col) %>% as.data.frame()
+      dict <- dict[!duplicated(dict[[group_col]]),]
+      
+      # add color to data_plot
+      data_plot <- data_plot %>%
+        dplyr::left_join(dict, by=c("name"=group_col)) %>%
+        dplyr::rename(color=sym(color_col))
+      
+      # create annotation data
+      anno <- data.frame(name = rep(rd$name, times=sapply(rd[[group_col]], length) %>% as.vector()),
+                         var = rep(rd$var, times=sapply(rd[[group_col]], length) %>% as.vector()),
+                         pathway = unlist(rd[[group_col]]),
+                         color = if(!is.null(color_col)){rep(rd[[color_col]], times=sapply(rd[[group_col]], length) %>% as.vector())}else{"pathway"}) %>%
+        dplyr::left_join(maplet::mtm_get_stat_by_name(D=D,name=ss) , by="var") %>%
+        dplyr::select(-var)
+      
+      # if pathway mapping exists in the metadata, use the names provided there
+      x <- D %>% metadata
+      if ("pathways" %in% names(x)){
+        if (group_col %in% names(x$pathways)) {
+          # add pathway names to dataframe
+          data_plot %<>%
+            dplyr::left_join(x$pathways[[group_col]][,c("ID","pathway_name")], by=c("name"="ID"))
+          anno %<>%
+            dplyr::left_join(x$pathways[[group_col]][,c("ID","pathway_name")], by=c("pathway"="ID")) %>%
+            dplyr::select(name,pathway_name,pathway,color,everything()) %>%
+            dplyr::rename(pathway_id=pathway, pathway=pathway_name)
+          
+          # set Unknown pathway names to Unknown
+          if(length(which(is.na(data_plot$pathway_name)))>0){
+            data_plot$pathway_name[which(is.na(data_plot$pathway_name))] <- "Unknown"
+          }
+          # substitute codes for names and remove extra column
+          data_plot %<>%
+            dplyr::mutate(name=pathway_name) %>%
+            dplyr::select(-pathway_name)
+        } else{
+          mti_logwarning(sprintf("%s field not found in the metadata",group_col))
+        }
+      }
+      # create labels for plotting
+      data_plot %<>% dplyr::mutate(label=sprintf("%s [%d]", name, perc$count))
+      
+      # convert labels to factor to sort alphabetically
+      data_plot$label <- as.factor(data_plot$label)
+      
+      # add comparison name to df
+      data_plot$comp <- ss
+      anno$comp <- ss
+      
+    }
+    list(dt = data_plot, anno = anno)
+  })
+  
+  # function to revert string structure
+  revert_list_str_4 <- function(ls) {
+    # get sub-elements in same order
+    x <- lapply(ls, `[`, names(ls[[1]]))
+    # stack and reslice
+    apply(do.call(rbind, x), 2, as.list)
+  }
+  
+  data <- revert_list_str_4(data)
+  
+  # if there is at least one result, produce plot, otherwise output empty plot
+  if((sapply(data$dt, function(ss){dim(ss)[1]}) %>% sum()) >0) {
+    # merge list into a single dataframe
+    data_plot <- do.call(rbind, data$dt) %>% as.data.frame()
+    # get common colnames in stat table
+    tt <- sapply(data$anno, colnames) %>% unlist %>% table %>% as.data.frame
+    colnames(tt)[1] <- "var"
+    tt %<>%
+      dplyr::filter(Freq == max(Freq)) %>%
+      dplyr::pull(var) %>%
+      as.character
+    anno <- lapply(data$anno, function(x){
+      x %>%
+        dplyr::select(tidyselect::any_of(tt))
+    }) %>% {do.call(rbind, .)} %>% as.data.frame()
+    
+    # optional sorting (only for single statistical results)
+    if (sort_by_y){
+      data_plot$label <- reorder(data_plot$label, -data_plot[[y_scale]])
+    }
+    # sort comp so that facets appear in the same order given by the user
+    data_plot$comp <- factor(data_plot$comp,levels=stat_list)
+    
+    # convert count to numeric
+    data_plot$count %<>% as.numeric
+    
+    ## CREATE PLOT
+    p <- ggplot(data_plot, aes(label)) +
+      (if("association" %in% colnames(data_plot)) {geom_bar(data = subset(data_plot, association == "positive"), aes(y = !!sym(y_scale), fill = color), stat = "identity", position = "dodge", color="black", size=0.4)}) +
+      (if("association" %in% colnames(data_plot)) {geom_bar(data = subset(data_plot, association == "negative"), aes(y = -!!sym(y_scale), fill = color), stat = "identity", position = "dodge", color="black", size=0.4)} else{geom_bar(aes(x=label, y=!!sym(y_scale), fill=color), stat = "identity", color="black", size=0.4)}) +
+      (if(y_scale=="fraction") {ggtitle(sprintf("Fraction of pathway affected, %s", gsub("~", "", rlang::expr_text(dplyr::enquo(feat_filter)))))}else{ggtitle(sprintf("Number of hits per pathway, %s", gsub("~", "", rlang::expr_text(dplyr::enquo(feat_filter)))))}) +
+      (if(y_scale=="count" & "association" %in% colnames(data_plot)) {expand_limits(y=c(-max(data_plot$count, na.rm = T)*1.7, max(data_plot$count, na.rm = T)*1.7))}) +
+      (if(y_scale=="count" & !("association" %in% colnames(data_plot))) {expand_limits(y=c(0, max(data_plot$count, na.rm = T)*1.7))}) +
+      (if(y_scale=="fraction" & "association" %in% colnames(data_plot)) {expand_limits(y=c(-1, 1))}) +
+      geom_hline(yintercept = 0,colour = "black", size=0.4) +
+      labs(x="",fill = color_col) +
+      theme(plot.title = element_text(hjust = 0.4)) +
+      scale_x_discrete(limits = rev(levels(data_plot$label)))
+    
+    # add phenotype labels to x axis
+    if("association" %in% colnames(data_plot) & length(stat_list)==1){
+      d <- maplet::mtm_get_stat_by_name(D, stat_list, fullstruct=T)
+      if ("groups" %in% names(d) && length(d$groups)==2) {
+        # get breaks
+        ggbld <- ggplot2::ggplot_build(p)
+        yticks = ggbld$layout$panel_params[[1]]$y$minor_breaks # using minor_breaks because sometimes breaks would not work
+        # edit labels to include groups
+        ytlabs = yticks
+        ytlabs[1] <- sprintf("%s\n%s", yticks[1], sprintf("high in %s", d$groups[1]))
+        ytlabs[length(ytlabs)] <- sprintf("%s\n%s", yticks[length(yticks)], sprintf("high in %s", d$groups[2]))
+        # apply new labels
+        p <- p +
+          scale_y_continuous(breaks = yticks, labels = ytlabs)
+      }
+    }
+    
+    # flip axes and add annotations on bars
+    p <- p +
+      coord_flip() +
+      (if(y_scale=="count" & !("association" %in% colnames(data_plot))) {geom_text(data=data_plot, aes(label, !!sym(y_scale), label= sprintf("%.2f%%", fraction*100)),
+                                                                                   position = position_dodge(width=0.9), hjust = -0.1, size=2.5)}) +
+      (if(y_scale=="count" & "association" %in% colnames(data_plot)) {geom_text(data=dplyr::filter(data_plot, association=="positive"), aes(label, !!sym(y_scale), group= association,label= sprintf("%.2f%%", fraction*100)),
+                                                                                position = position_dodge(width=0.9), hjust = -0.1, size=2.5)}) +
+      (if(y_scale=="count" & "association" %in% colnames(data_plot)) {geom_text(data=data_plot %>% dplyr::filter(association=="negative"), aes(label, -!!sym(y_scale), group= association,label= sprintf("%.2f%%", fraction*100)),
+                                                                                position = position_dodge(width=0.9), hjust = 1.1, size=2.5)}) +
+      facet_wrap(~comp)
+    
+    # add custom elements?
+    if (!is.null(ggadd)) p <- p + ggadd
+    
+    # save plot parameters to be passed to the html generator for dynamical plot height
+    re <- p %>%
+      ggplot2::ggplot_build() %>%
+      magrittr::extract2('layout') %>%
+      magrittr::extract2('layout')
+    
+    nr <- data_plot$name %>% unique %>% length # number of pathways
+    ncol <- re$COL %>% max() # number of panel columns
+    nrow <- re$ROW %>% max() # number of panel rows
+    
+  } else {
+    p <- ggplot() +
+      geom_text(aes(x=0,y=0, label="No significant results"), size=10)
+    
+    # save plot parameters to be passed to the html generator for dynamical plot height
+    nr <- 0 # number of pathways
+    ncol <- NULL
+    nrow <- NULL
+    
+  }
+  
+  if(!is.null(outfile)){
+    if(exists("data_plot")){
+      wb = openxlsx::createWorkbook()
+      sheet = openxlsx::addWorksheet(wb, "Parameters")
+      if(is.null(color_col)){color_col <- 'none'}
+      openxlsx::writeData(wb, sheet=sheet, list(comparisons = stat_list, feat_filter = gsub("~", "", rlang::expr_text(dplyr::enquo(feat_filter))), group_col = group_col, coloredby = color_col))
+      sheet = openxlsx::addWorksheet(wb, "AggregatedPathways")
+      openxlsx::writeData(wb, sheet=sheet, data_plot, rowNames = F, colNames = T)
+      sheet = openxlsx::addWorksheet(wb, "IndividualResults")
+      openxlsx::writeData(wb, sheet=sheet, anno, rowNames = F, colNames = T)
+      openxlsx::saveWorkbook(wb, outfile, overwrite = T)
+    } else {
+      warning("mt_plots_statsbarplot: No significant results. outfile ignored.")
+    }
+  }
+  
+  funargs <- mti_funargs()
+  D %<>%
+    mti_generate_result(
+      funargs = funargs,
+      logtxt = ifelse(exists("stat_list"), sprintf("bar plot for comparison %s, by %s, filtered for %s, using %s", paste(stat_list,collapse = ", "), group_col, gsub("~", "", rlang::expr_text(dplyr::enquo(feat_filter))), y_scale),
+                      sprintf("bar plot by %s using %s", group_col, y_scale)),
+      output = list(p),
+      output2 = list(nr = nr, npancol = ncol, npanrow = nrow)
+    )
+  
+  # Convert ggplot object to plotly object
+  interactive_plot <- plotly::ggplotly(p)
+  
+  # Return the interactive plot
+  interactive_plot
+  
+}
+
+mti_settings_list <- function() {
+  list(
+    dummy = list(class="numeric", default=5),
+    save_all_assays = list(class="logical", default=F)
+  )
+}
+
+mti_add_to_list <- function(lst, element, oname) {
+  # init if needed
+  if (is.null(lst) || length(lst)==0) lst=c()
+  # add and return
+  lst[[length(lst)+1]] = element
+  names(lst)[length(lst)] = oname
+  
+  lst
+}
+
+mti_logmsg <- function(msg) { logging::loginfo(mti_escape_percent(msg), logger="mt"); msg }
+mti_logstatus <- function(msg) { logging::loginfo(mti_escape_percent(msg), logger="mts"); msg }
+mti_logwarning <- function(msg) { logging::loginfo(mti_escape_percent(sprintf("WARNING: %s",msg)), logger="mtw"); msg }
+
+# produce sprintf-safe copy of string (create for new loginfo() behaviour, that interprets strings as formats)
+mti_escape_percent <- function(txt) gsub('%','%%',txt)
+mti_dots_to_str <- function(...) {
+  l = eval(substitute(alist(...)))
+  paste(sapply(names(l), function(k){sprintf('%s=%s',k,as.character(l[[k]]))}), collapse = ', ')
 }
