@@ -1050,8 +1050,8 @@ mt_stats_pathway_enrichment_new <- function(D, stat_name, pw_col, cutoff = 0.05)
     dplyr::summarise(n_total = unique(n_total),
                      n_total_sig = unique(n_total_sig),
                      n_pw = dplyr::n(),
-                     n_pw_sig = sum(significant)) %>%
-    #mean_fc = mean(fc)) %>%
+                     n_pw_sig = sum(significant),
+                     mean_fc = mean(fc)) %>%
     dplyr::filter(n_pw >= 5) %>%
     
     # calculate contingency table entries
@@ -1069,9 +1069,9 @@ mt_stats_pathway_enrichment_new <- function(D, stat_name, pw_col, cutoff = 0.05)
     dplyr::transmute(pathway_name,
                      pathway_ID = ID,
                      p_value,
-                     p_value_adjusted = stats::p.adjust(p_value, method = "fdr")) %>%
-    #mean_foldchange = mean_fc) %>%
-    dplyr::arrange(p_value)
+                     p_value_adjusted = stats::p.adjust(p_value, method = "fdr"),
+                     mean_foldchange = mean_fc) %>%
+  dplyr::arrange(p_value)
   
   metadata(D)$pathways$enrichment_results <-
     dplyr::as_tibble(enrichment_results)
@@ -1256,7 +1256,7 @@ mt_plots_volcano_new <- function(D,
   interactive_plot <- plotly::ggplotly(p)
   
   # Return the interactive plot
-  interactive_plot
+  return(interactive_plot)
   
   
 }
@@ -1844,6 +1844,9 @@ mt_plots_stats_pathway_bar_new <- function(D,
     if(!(color_col %in% colnames(rowData(D))))
       stop(sprintf("color_col column '%s' not found in rowData", color_col))
   
+  
+  print("WOFFFFFFFFFFFFFF HRERERER")
+  
   ## rowData
   rd <- rowData(D) %>%
     as.data.frame() %>%
@@ -1863,15 +1866,39 @@ mt_plots_stats_pathway_bar_new <- function(D,
   
   data <- lapply(stat_list %>% {names(.)=.;.}, function(ss){
     ## subselect variables
-    if(flag_filter) {
-      feat_filter_q <- dplyr::enquo(feat_filter)
-      sel <- maplet::mtm_get_stat_by_name(D=D,name=ss) %>%
-        dplyr::filter(!!feat_filter_q) %>%
-        dplyr::filter(var %in% rd$var)
-      rd <- rd %>%
-        dplyr::filter(var %in% sel$var)
+    # if(flag_filter) {
+    #   feat_filter_q <- dplyr::enquo(feat_filter)
+    #   sel <- maplet::mtm_get_stat_by_name(D=D,name=ss) %>%
+    #     dplyr::filter(!!feat_filter_q) %>%
+    #     dplyr::filter(var %in% rd$var)
+    #   rd <- rd %>%
+    #     dplyr::filter(var %in% sel$var)
+    #   
+    # }
+    
+    #my changes
+    if (flag_filter) {
+      feat_filter_q <- enquo(feat_filter)
+      sel <- mtm_get_stat_by_name(D = D, name = ss) %>%
+        filter(!!feat_filter_q) %>%
+        filter(var %in% rd$var)
       
+      print(sel)  # Print the sel object to check its content
+      
+      if (nrow(sel) > 0) {
+        rd_filtered <- rd %>%
+          filter(var %in% sel$var)
+        
+        if (nrow(rd_filtered) > 0) {
+          rd <- rd_filtered
+        }
+      }
     }
+    
+    
+    
+    
+    print("GGGYGYGYGYGYGYG HRERERER")
     
     # if filtering gives an empty matrix, produce an empty df
     if(nrow(rd)==0) {
@@ -1953,6 +1980,8 @@ mt_plots_stats_pathway_bar_new <- function(D,
         dplyr::left_join(maplet::mtm_get_stat_by_name(D=D,name=ss) , by="var") %>%
         dplyr::select(-var)
       
+      print("WVUVUVUVUVOOOO HRERERER")
+      
       # if pathway mapping exists in the metadata, use the names provided there
       x <- D %>% metadata
       if ("pathways" %in% names(x)){
@@ -2000,6 +2029,8 @@ mt_plots_stats_pathway_bar_new <- function(D,
   }
   
   data <- revert_list_str_4(data)
+  
+  print("CYCYCYCY HRERERER")
   
   # if there is at least one result, produce plot, otherwise output empty plot
   if((sapply(data$dt, function(ss){dim(ss)[1]}) %>% sum()) >0) {
@@ -2057,6 +2088,8 @@ mt_plots_stats_pathway_bar_new <- function(D,
       }
     }
     
+    print("WOOOO HRERERER")
+    
     # flip axes and add annotations on bars
     p <- p +
       coord_flip() +
@@ -2091,6 +2124,8 @@ mt_plots_stats_pathway_bar_new <- function(D,
     nrow <- NULL
     
   }
+  
+  print("REACHED HRERERER")
   
   if(!is.null(outfile)){
     if(exists("data_plot")){
@@ -2152,4 +2187,48 @@ mti_escape_percent <- function(txt) gsub('%','%%',txt)
 mti_dots_to_str <- function(...) {
   l = eval(substitute(alist(...)))
   paste(sapply(names(l), function(k){sprintf('%s=%s',k,as.character(l[[k]]))}), collapse = ', ')
+}
+
+
+mti_generate_result <- function(
+    D,
+    funargs,
+    logtxt="",
+    output=NULL,
+    output2=NULL
+) {
+  
+  # ensure structure of funargs
+  stopifnot("fun" %in% names(funargs))
+  stopifnot("args" %in% names(funargs))
+  
+  this.uuid = uuid::UUIDgenerate()
+  # check if assay updated
+  save_assays = mti_get_setting(D, "save_all_assays")
+  if(save_assays){
+    if(assays(D) %>% length() != 0){
+      metadata(D)$assays %<>% mti_assay_ptr(res_assay=assay(D))
+      assay_ptr <- metadata(D)$assays$head_ptr
+    }else{
+      assay_ptr <- NULL
+    }
+  }else{
+    assay_ptr <- NULL
+  }
+  
+  # assemble list
+  metadata(D)$results %<>% mti_add_to_list(
+    list(
+      fun=funargs$fun,
+      args=funargs$args,
+      logtxt=mti_logmsg(logtxt),
+      uuid=this.uuid,
+      output=output,
+      output2=output2,
+      assay_ptr=assay_ptr
+    ),
+    oname = paste(paste(funargs$fun,collapse = "_"), this.uuid, sep = ".")
+  )
+  
+  D
 }

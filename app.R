@@ -26,6 +26,8 @@ library(RColorBrewer)
 library(grid)
 library(graphics)
 library(DT)
+library(shinymaterial)
+library(shinycssloaders)
 
 
 # refer help functions
@@ -636,6 +638,8 @@ ui <- fluidPage(
                      tags$hr(),
                      box(solidHeader = T, collapsible = T, collapsed = T,
                          title="Pathway Enrichment", width = "220px",
+                         tags$p(HTML("Outcome variable:")),
+                         uiOutput("mod7_outcome_path_enrich"),
                          tags$p(HTML("rowData column to use for pathway fetching. Hint: The selected column must contain HMDB metabolite
                       identifiers")),
                          uiOutput("mod7_in_col"),
@@ -657,6 +661,7 @@ ui <- fluidPage(
                      br(),
                      br(),
                      #fluidRow(column(width = 12, uiOutput("mod7_main_panel")))
+                     uiOutput("mod7_main_panel_1"),
                      uiOutput("mod7_main_panel_graph1"),
                      br(),
                      uiOutput("mod7_main_panel_graph2"),
@@ -1416,88 +1421,67 @@ server <- function(input, output,session) {
   D_for_analysis <- reactiveVal()
   
   
-  #all 5 non-interactive graphs & only 1 interactive graph - working
+  
+  
+  #original version with all graphs - working
   # observeEvent(input$mod2_go_missingness,{
-  # 
-  #   pmissing_list$value <- get_plots_SE(D_missingness())
   #   
-  #     pmissing_list$length <-  pmissing_list$value %>% length()
-  # 
-  #     # Update D_for_analysis
-  #     D_for_analysis(D_missingness())
-  # 
-  # 
-  #     output$mod2_main_panel  <- renderUI({
-  # 
-  # 
-  # 
-  #       mod2_output_plotlist <-   lapply(1: pmissing_list$length, function(i){
-  #         local({
-  #           len_j <- length(pmissing_list$value[[i]])
-  #           lapply(1:(len_j), function(j) {
-  # 
-  #             plotname <- paste("Plot", i,j, sep="")
-  #             #print(paste0("The value of my variable from UI is ", plotname))
-  # 
-  #             plotOutput(plotname)
-  # 
-  #           })
-  #         })
-  # 
-  # 
-  #       })
-  # 
-  #       do.call(tagList, mod2_output_plotlist)
-  # 
-  # 
-  #     })
-  # 
-  #     lapply(1: pmissing_list$length, function(i){
-  #       local({
-  # 
-  #         len_j <- length(pmissing_list$value[[i]])
-  # 
-  #         lapply(1:(len_j), function(j) {
-  # 
-  #           plotname <- paste("Plot", i,j, sep="")
-  # 
-  #           output[[paste("Plot", i,j, sep="")]] <-
-  #             renderPlot({
-  #               #grid.force()
-  #               pmissing_list$value[[i]][j]
-  # 
-  #             })
-  #         })
-  #       })
-  # 
-  #     })
-  # 
+  #   pmissing_list$value <- get_plots_SE(D_missingness())
+  #   pmissing_list$length <-  pmissing_list$value %>% length()
+  #   
+  #   # Update D_for_analysis
   #   D_for_analysis(D_missingness())
-  # 
-  #   p <- mt_plots_sample_boxplot_new(D_for_analysis(),
-  #                                title = "Sample boxplot",
-  #                                show_legend = TRUE,
-  #                                ylabel = "Feature concentrations",
-  #                                plot_logged = TRUE,
-  #                                hover = input$mod5_select_hover)
-  # 
-  #   interactive_plot <- plotly::ggplotly(p)
-  # 
-  #   interactive_plot <- plotly::style(interactive_plot, tooltip = input$mod5_select_hover)
-  #   interactive_plot <- plotly::event_register(interactive_plot, "plotly_hover")
-  # 
-  #   output$mod2_main_panel_part2 <- renderUI({
-  #     plotly::plotlyOutput("interactive_plot")
+  #   
+  #   
+  #   output$mod2_main_panel  <- renderUI({
+  #     
+  #     
+  #     
+  #     mod2_output_plotlist <-   lapply(1: pmissing_list$length, function(i){
+  #       local({
+  #         len_j <- length(pmissing_list$value[[i]])
+  #         lapply(1:(len_j), function(j) {
+  #           
+  #           plotname <- paste("Plot", i,j, sep="")
+  #           #print(paste0("The value of my variable from UI is ", plotname))
+  #           
+  #           plotOutput(plotname)
+  #           
+  #         })
+  #       })
+  #       
+  #       
+  #     })
+  #     
+  #     do.call(tagList, mod2_output_plotlist)
+  #     
+  #     
   #   })
-  # 
-  #   output$interactive_plot <- plotly::renderPlotly({
-  #     interactive_plot
+  #   
+  #   lapply(1: pmissing_list$length, function(i){
+  #     local({
+  #       
+  #       len_j <- length(pmissing_list$value[[i]])
+  #       
+  #       lapply(1:(len_j), function(j) {
+  #         
+  #         plotname <- paste("Plot", i,j, sep="")
+  #         
+  #         output[[paste("Plot", i,j, sep="")]] <-
+  #           renderPlot({
+  #             #grid.force()
+  #             pmissing_list$value[[i]][j]
+  #             
+  #           })
+  #       })
+  #     })
+  #     
   #   })
   #   
   # })
   
-  #original version with all graphs - working
-  observeEvent(input$mod2_go_missingness,{
+  #progress bar version
+  observeEvent(input$mod2_go_missingness, {
     
     pmissing_list$value <- get_plots_SE(D_missingness())
     pmissing_list$length <-  pmissing_list$value %>% length()
@@ -1505,88 +1489,49 @@ server <- function(input, output,session) {
     # Update D_for_analysis
     D_for_analysis(D_missingness())
     
+    # Calculate the total number of plots
+    total_plots <- pmissing_list$length
     
-    output$mod2_main_panel  <- renderUI({
-      
-      
-      
-      mod2_output_plotlist <-   lapply(1: pmissing_list$length, function(i){
+    # Initialize a variable to track the progress
+    progress <- 0
+    
+    # Function to increment progress
+    updateProgress <- function() {
+      progress <<- progress + 1
+    }
+    
+    # Render the plots
+    output$mod2_main_panel <- renderUI({
+      mod2_output_plotlist <- lapply(1:total_plots, function(i) {
         local({
           len_j <- length(pmissing_list$value[[i]])
-          lapply(1:(len_j), function(j) {
-            
-            plotname <- paste("Plot", i,j, sep="")
-            #print(paste0("The value of my variable from UI is ", plotname))
-            
-            plotOutput(plotname)
-            
+          lapply(1:len_j, function(j) {
+            plotname <- paste("Plot", i, j, sep = "")
+            plotOutput(plotname) %>% withSpinner()
           })
         })
-        
-        
       })
       
       do.call(tagList, mod2_output_plotlist)
-      
-      
     })
     
-    lapply(1: pmissing_list$length, function(i){
+    # Render individual plots
+    lapply(1:total_plots, function(i) {
       local({
-        
         len_j <- length(pmissing_list$value[[i]])
-        
-        lapply(1:(len_j), function(j) {
-          
-          plotname <- paste("Plot", i,j, sep="")
-          
-          output[[paste("Plot", i,j, sep="")]] <-
-            renderPlot({
-              #grid.force()
-              pmissing_list$value[[i]][j]
-              
-            })
+        lapply(1:len_j, function(j) {
+          plotname <- paste("Plot", i, j, sep = "")
+          output[[plotname]] <- renderPlot({
+            updateProgress()
+            pmissing_list$value[[i]][j]
+          })
         })
       })
-      
     })
     
+
   })
   
-  #version trying to make all graphs interactive
-  # observeEvent(input$mod2_go_missingness, {
-  #   pmissing_list$value <- get_plots_SE(D_missingness())
-  #   pmissing_list$length <- length(pmissing_list$value)
-  #   
-  #   # Update D_for_analysis
-  #   D_for_analysis(D_missingness())
-  #   
-  #   output$mod2_main_panel <- renderUI({
-  #     mod2_output_plotlist <- lapply(1:pmissing_list$length, function(i) {
-  #       local({
-  #         len_j <- length(pmissing_list$value[[i]])
-  #         lapply(1:len_j, function(j) {
-  #           plotname <- paste("Plot", i, j, sep = "")
-  #           plotly::plotlyOutput(plotname, height = "400px", width = "100%")
-  #         })
-  #       })
-  #     })
-  #     
-  #     do.call(tagList, mod2_output_plotlist)
-  #   })
-  #   
-  #   lapply(1:pmissing_list$length, function(i) {
-  #     local({
-  #       len_j <- length(pmissing_list$value[[i]])
-  #       lapply(1:len_j, function(j) {
-  #         plotname <- paste("Plot", i, j, sep = "")
-  #         output[[plotname]] <- renderPlotly({
-  #           plotly::ggplotly(pmissing_list$value[[i]][[j]])
-  #         })
-  #       })
-  #     })
-  #   })
-  # })
   
   
   
@@ -1613,10 +1558,15 @@ server <- function(input, output,session) {
     # Update D_for_analysis
     D_for_analysis(D_impute())
     
+    # Initialize a variable to track the progress
+    progress <- 0
+    
+    # Function to increment progress
+    updateProgress <- function() {
+      progress <<- progress + 1
+    }
+    
     output$mod2_main_panel  <- renderUI({
-      
-      
-      
       mod2_output_plotlist <-   lapply(1: pimpute_list$length, function(i){
         local({
           len_j <- length(pimpute_list$value[[i]])
@@ -1625,7 +1575,7 @@ server <- function(input, output,session) {
             plotname <- paste("Plot", i,j, sep="")
             #print(paste0("The value of my variable from UI is ", plotname))
             
-            plotOutput(plotname)
+            plotOutput(plotname) %>% withSpinner()
             
           })
         })
@@ -1650,6 +1600,7 @@ server <- function(input, output,session) {
           output[[paste("Plot", i,j, sep="")]] <-
             renderPlot({
               #grid.force()
+              updateProgress()
               pimpute_list$value[[i]][j]
               
             })
@@ -1976,26 +1927,26 @@ server <- function(input, output,session) {
     session_store$mod5_plotly <- switch(input$mod5_dimension,
                                         "col"=
                                           if(mod5_input()[2]==TRUE & mod5_input()[4]==TRUE){
-                                            mod5_scatter(D(), x=mod5_input()[3], 
-                                                         y=mod5_input()[1], 
+                                            mod5_scatter(D_for_analysis(), x=mod5_input()[3],
+                                                         y=mod5_input()[1],
                                                          hover = input$mod5_select_hover)
                                           } else if(mod5_input()[2]==TRUE & mod5_input()[4]==FALSE) {
-                                            mod5_boxplot(D(), x=mod5_input()[3], 
+                                            mod5_boxplot(D_for_analysis(), x=mod5_input()[3],
                                                          x_cate = FALSE,
                                                          y=mod5_input()[1],
                                                          y_cate = TRUE,
-                                                         fill=mod5_input()[3], 
+                                                         fill=mod5_input()[3],
                                                          hover=input$mod5_select_hover)
                                           } else if(mod5_input()[2]==FALSE & mod5_input()[4]==TRUE) {
-                                            mod5_boxplot(D(), x=mod5_input()[1], 
+                                            mod5_boxplot(D_for_analysis(), x=mod5_input()[1],
                                                          x_cate = FALSE,
                                                          y=mod5_input()[3],
                                                          y_cate = TRUE,
-                                                         fill=mod5_input()[1], 
+                                                         fill=mod5_input()[1],
                                                          hover=input$mod5_select_hover)
                                           } else {
-                                            mod5_barplot(D(), x=mod5_input()[3], 
-                                                         fill=mod5_input()[1], 
+                                            mod5_barplot(D_for_analysis(), x=mod5_input()[3],
+                                                         fill=mod5_input()[1],
                                                          hover = input$mod5_select_hover)
                                           },
                                         "row"=
@@ -2004,11 +1955,11 @@ server <- function(input, output,session) {
                                           dplyr::rename(var=mod5_input()[5]) %>%
                                           dplyr::group_by(var) %>%
                                           dplyr::summarise(count=n()) %>%
-                                          
-                                          
-                                          
-                                          plot_ly(labels = ~var, 
-                                                  values = ~count, 
+
+
+
+                                          plot_ly(labels = ~var,
+                                                  values = ~count,
                                                   type = 'pie',
                                                   textposition = 'inside',
                                                   source="mod5-click",
@@ -2023,6 +1974,67 @@ server <- function(input, output,session) {
     session_store$mod5_plotly
   }
   )
+  
+  
+  # output$mod5_plot <- renderPlotly({
+  #   withSpinner({
+  #     session_store$mod5_plotly <- switch(input$mod5_dimension,
+  #                                         "col" = {
+  #                                           if (mod5_input()[2] == TRUE & mod5_input()[4] == TRUE) {
+  #                                             mod5_scatter(D_for_analysis(), x = mod5_input()[3], 
+  #                                                          y = mod5_input()[1], 
+  #                                                          hover = input$mod5_select_hover)
+  #                                           } else if (mod5_input()[2] == TRUE & mod5_input()[4] == FALSE) {
+  #                                             mod5_boxplot(D_for_analysis(), x = mod5_input()[3], 
+  #                                                          x_cate = FALSE,
+  #                                                          y = mod5_input()[1],
+  #                                                          y_cate = TRUE,
+  #                                                          fill = mod5_input()[3], 
+  #                                                          hover = input$mod5_select_hover)
+  #                                           } else if (mod5_input()[2] == FALSE & mod5_input()[4] == TRUE) {
+  #                                             mod5_boxplot(D_for_analysis(), x = mod5_input()[1], 
+  #                                                          x_cate = FALSE,
+  #                                                          y = mod5_input()[3],
+  #                                                          y_cate = TRUE,
+  #                                                          fill = mod5_input()[1], 
+  #                                                          hover = input$mod5_select_hover)
+  #                                           } else {
+  #                                             mod5_barplot(D_for_analysis(), x = mod5_input()[3], 
+  #                                                          fill = mod5_input()[1], 
+  #                                                          hover = input$mod5_select_hover)
+  #                                           }
+  #                                         },
+  #                                         "row" = {
+  #                                           rowData(D()) %>%
+  #                                             data.frame() %>%
+  #                                             dplyr::rename(var = mod5_input()[5]) %>%
+  #                                             dplyr::group_by(var) %>%
+  #                                             dplyr::summarise(count = n()) %>%
+  #                                             plot_ly(
+  #                                               labels = ~var, 
+  #                                               values = ~count, 
+  #                                               type = 'pie',
+  #                                               textposition = 'inside',
+  #                                               source = "mod5-click",
+  #                                               title = sprintf("<b>Distribution of %s</b>", mod5_input()[5])
+  #                                             )
+  #                                         }
+  #     )
+  #   })
+  #   
+  #   layout(autosize = FALSE, width = 1000, height = 500,
+  #          uniformtext = list(minsize = 12, mode = 'hide'),
+  #          legend = list(x = 1, y = 0.5, tracegroupgap = 5)
+  #   )
+  #   
+  #   session_store$mod5_plotly
+  # })
+  # 
+  
+  
+  
+  
+  
   # download button
   output$mod5_download_plotly <- downloadHandler(
     filename = function() {
@@ -2371,6 +2383,14 @@ server <- function(input, output,session) {
     )
   })
   
+  output$mod7_outcome_path_enrich <- renderUI({
+    selectInput("outcome_mod7_path_enrich", label = NULL,
+                width = "220px",
+                choices = names(colData(D())),
+                selected = "GROUP_ID"
+    )
+  })
+  
   output$mod7_stat_name <- renderUI({
     selectInput("stat_name_mod7", label = NULL,
                 width = "220px",
@@ -2506,10 +2526,10 @@ server <- function(input, output,session) {
       interactive_plot1 <- plotly::ggplotly(p1)
 
       interactive_plot1 <- plotly::style(interactive_plot1, tooltip = input$mod5_select_hover)
-      interactive_plot1 <- plotly::event_register(interactive_plot1, "plotly_hover")
+      interactive_plot1 <- plotly::event_register(interactive_plot1, "plotly_hover") 
 
       output$mod7_main_panel_graph1 <- renderUI({
-        plotly::plotlyOutput("interactive_plot1")
+        plotly::plotlyOutput("interactive_plot1") 
       })
 
       output$interactive_plot1 <- plotly::renderPlotly({
@@ -2577,6 +2597,9 @@ server <- function(input, output,session) {
                                x = !!sym(ifelse(input$mod7_outcome_binary_corr,"fc","statistic")),
                                feat_filter = p.adj < input$mod7_sig_threshold_corr,
                                color = p.adj < input$mod7_sig_threshold_corr)
+    
+    
+    
     
     interactive_plot1 <- plotly::ggplotly(p1)
     
@@ -2749,7 +2772,7 @@ server <- function(input, output,session) {
   })
   
   
-  #actions for partial correlation
+  #actions for pathway enrichment
   observeEvent(input$mod7_go_path_enrich, {
     # Get the pathway enrichment results
     print(D_final_enrich())
@@ -2759,6 +2782,47 @@ server <- function(input, output,session) {
     # Display the results in the desired output element
     output$mod7_main_panel_2 <- renderDT({
       datatable(enrichment_results)
+    })
+    
+    
+    #want barplot for D_final_enrich
+    # Generate the stat_list based on input values
+    #covar_col_select <- input$mod7_covar_col_select_diff
+    #covar_row_select <- input$mod7_covar_row_select_diff
+    var <- input$outcome_mod7_path_enrich
+    #if(is.null(covar_col_select) && is.null(covar_row_select))
+    #{
+    #  covar = NULL
+    #} else
+    #{
+    #  covar <- paste("+", paste(c(covar_row_select,covar_col_select), collapse = "+"), sep = "")
+    #}
+    
+    
+    # p1 <- mt_plots_stats_pathway_bar_new(
+    #   D_final_enrich(),
+    #   stat_list = stat_list,
+    #   feat_filter = p.value < 1,
+    #   group_col = input$in_col_mod7
+    # )
+    
+    p1 <- mt_plots_stats_pathway_bar_new(D_final_enrich(),
+                                         stat_list = sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""),
+                                         feat_filter = p.adj < input$mod7_sig_threshold_diff)
+    
+    
+    
+    
+    
+    interactive_plot1 <- plotly::style(interactive_plot1, tooltip = input$mod5_select_hover)
+    interactive_plot1 <- plotly::event_register(interactive_plot1, "plotly_hover")
+    
+    output$mod7_main_panel_1 <- renderUI({
+      plotly::plotlyOutput("interactive_plot1")
+    })
+    
+    output$interactive_plot1 <- plotly::renderPlotly({
+      interactive_plot1
     })
   })
   
@@ -2836,7 +2900,7 @@ server <- function(input, output,session) {
   D_path_enrich <- reactive({
     
     
-    D <- D_differ_tab_diff() %>%
+    D <- D_for_analysis() %>%
       mt_anno_pathways_hmdb_new(in_col = input$in_col_mod7,
                                 out_col = "kegg_db",
                                 pwdb_name = "KEGG",
@@ -2872,8 +2936,11 @@ server <- function(input, output,session) {
   
   D_final_enrich <- reactive({
     D_path_enrich() %>%
-      mt_stats_pathway_enrichment_new(pw_col = "kegg_db",
-                                      stat_name = sprintf("~  %s%s Analysis",input$outcome_mod7_diff, replace(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = ""), is.null(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = "")),"")),
+      mt_stats_univ_lm(formula = as.formula(sprintf("~ %s%s",input$outcome_mod7_path_enrich, "")), stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, "")) %>%
+      mt_post_multtest(stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""), method = "BH") %>%
+      mt_post_fold_change(stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, "")) %>%
+      mt_stats_pathway_enrichment(pw_col = "kegg_db",
+                                      stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""),
                                       cutoff = 0.4)
   })
   
