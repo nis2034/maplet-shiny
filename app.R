@@ -2,7 +2,8 @@
 #interactiveness for statistical analysis tab Working
 #Differential expression separated, diff exp analaysis, correlation analysis working
 #Partial Correlation working
-# Pathway enrichment also working: need to generatize and remove hard-coding
+# Pathway enrichment also working: tables for both above are working not plots
+#Loading animations working
 
 rm(list=ls())
 
@@ -570,8 +571,8 @@ ui <- fluidPage(
                          
                          tags$p(HTML("Pathway aggregation in barplot:")),
                          uiOutput("mod7_group_col_barplot_diff"),
-                         
                          actionButton("mod7_go_diff", "Run", width = "110px")
+                         
                      ),
                      tags$hr(),
                      box(solidHeader = T, collapsible = T, collapsed = T,
@@ -662,11 +663,14 @@ ui <- fluidPage(
                      br(),
                      #fluidRow(column(width = 12, uiOutput("mod7_main_panel")))
                      uiOutput("mod7_main_panel_1"),
-                     uiOutput("mod7_main_panel_graph1"),
+                     
+                     withSpinner(uiOutput("mod7_main_panel_graph1")),
                      br(),
-                     uiOutput("mod7_main_panel_graph2"),
+                     withSpinner(uiOutput("mod7_main_panel_graph2")),
+                     
                      br(),
-                     uiOutput("mod7_main_panel_graph3"),
+                     withSpinner(uiOutput("mod7_main_panel_graph3")),
+                    
                      DTOutput("mod7_main_panel_2")
                    )
                  )
@@ -2499,12 +2503,14 @@ server <- function(input, output,session) {
   })
   
   # Define rendering logic of outputs in Module-Differential Expression Analysis(coded as mod7) ------------------------------
+    
   
     observeEvent(input$mod7_go_diff,{
 
 
       print("done")
       print(class(D_differ_tab_diff()))
+      
 
       covar_col_select <- input$mod7_covar_col_select_diff
       covar_row_select <- input$mod7_covar_row_select_diff
@@ -2516,68 +2522,88 @@ server <- function(input, output,session) {
       {
         covar <- paste("+", paste(c(covar_row_select,covar_col_select), collapse = "+"), sep = "")
       }
-
-      p1 <- mt_plots_volcano_new(D_differ_tab_diff(),
-                             stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
-                             x = !!sym(ifelse(input$mod7_outcome_binary_diff,"fc","statistic")),
-                             feat_filter = p.adj < input$mod7_sig_threshold_diff,
-                             color = p.adj < input$mod7_sig_threshold_diff)
-
+      
+      x <- if (input$mod7_outcome_binary_diff) {
+        "fc"
+      } else {
+        "statistic"
+      }
+      
+      p1 <- mt_plots_volcano_new(
+        D_differ_tab_diff(),
+        stat_name = sprintf("~  %s%s Analysis", var, replace(covar, is.null(covar), "")),
+        x = !!sym(x),
+        feat_filter = p.adj < input$mod7_sig_threshold_diff,
+        color = p.adj < input$mod7_sig_threshold_diff
+      )
+      
       interactive_plot1 <- plotly::ggplotly(p1)
-
+      
       interactive_plot1 <- plotly::style(interactive_plot1, tooltip = input$mod5_select_hover)
       interactive_plot1 <- plotly::event_register(interactive_plot1, "plotly_hover") 
-
+      
+ 
+      
       output$mod7_main_panel_graph1 <- renderUI({
         plotly::plotlyOutput("interactive_plot1") 
       })
-
+      
       output$interactive_plot1 <- plotly::renderPlotly({
         interactive_plot1
       })
       
-
+      
+      plot_type <- if (input$mod7_outcome_binary_diff) {
+        "box"
+      } else {
+        "scatter"
+      }
+      
       p2 <- mt_plots_box_scatter_new(D_differ_tab_diff(),
-                                stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
-                                 x = !!sym(var),
-                                 plot_type = ifelse(input$mod7_outcome_binary_diff,"box","scatter"),
-                                 feat_filter = p.adj < input$mod7_sig_threshold_diff,
-                                 feat_sort = p.value,
-                                 annotation = "{sprintf('P-value: %.2e', p.value)}\nP.adj: {sprintf('%.2e', p.adj)}")
-
+                                     stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+                                     x = !!sym(var),
+                                     plot_type = plot_type,
+                                     feat_filter = p.adj < input$mod7_sig_threshold_diff,
+                                     feat_sort = p.value,
+                                     annotation = "{sprintf('P-value: %.2e', p.value)}\nP.adj: {sprintf('%.2e', p.adj)}")
+      
       interactive_plot2 <- plotly::ggplotly(p2)
-
+      
       interactive_plot2 <- plotly::style(interactive_plot2, tooltip = input$mod5_select_hover)
       interactive_plot2 <- plotly::event_register(interactive_plot2, "plotly_hover")
+      
 
       output$mod7_main_panel_graph2 <- renderUI({
-        plotly::plotlyOutput("interactive_plot2")
+        plotly::plotlyOutput("interactive_plot2") 
       })
-
+      
       output$interactive_plot2 <- plotly::renderPlotly({
         interactive_plot2
       })
-
+      
+     
+      
       p3 <- mt_plots_stats_pathway_bar_new(D_differ_tab_diff(),
-                                       stat_list = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
-                                       y_scale = "count",
-                                       feat_filter = p.adj < input$mod7_sig_threshold_diff,
-                                       group_col = input$group_col_barplot_mod7_diff)
-
+                                           stat_list = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+                                           y_scale = "count",
+                                           feat_filter = p.adj < input$mod7_sig_threshold_diff,
+                                           group_col = input$group_col_barplot_mod7_diff)
+      
       interactive_plot3 <- plotly::ggplotly(p3)
-
+      
       interactive_plot3 <- plotly::style(interactive_plot3, tooltip = input$mod5_select_hover)
       interactive_plot3 <- plotly::event_register(interactive_plot3, "plotly_hover")
-
+      
       output$mod7_main_panel_graph3 <- renderUI({
-        plotly::plotlyOutput("interactive_plot3")
+        plotlyOutput("interactive_plot3") 
       })
-
-      output$interactive_plot3 <- plotly::renderPlotly({
+      
+      output$interactive_plot3 <- renderPlotly({
         interactive_plot3
       })
-
-
+ 
+     
+  
   })
   
   observeEvent(input$mod7_go_corr,{
@@ -2588,7 +2614,7 @@ server <- function(input, output,session) {
     
     #covar_col_select <- input$mod7_covar_col_select_diff
     #covar_row_select <- input$mod7_covar_row_select_diff
-    var <- input$outcome_mod7_diff
+    var <- input$outcome_mod7_corr
     covar = NULL
      
     
@@ -2597,19 +2623,19 @@ server <- function(input, output,session) {
                                x = !!sym(ifelse(input$mod7_outcome_binary_corr,"fc","statistic")),
                                feat_filter = p.adj < input$mod7_sig_threshold_corr,
                                color = p.adj < input$mod7_sig_threshold_corr)
-    
-    
-    
-    
+
+
+
+
     interactive_plot1 <- plotly::ggplotly(p1)
-    
+
     interactive_plot1 <- plotly::style(interactive_plot1, tooltip = input$mod5_select_hover)
     interactive_plot1 <- plotly::event_register(interactive_plot1, "plotly_hover")
-    
+
     output$mod7_main_panel_graph1 <- renderUI({
       plotly::plotlyOutput("interactive_plot1")
     })
-    
+
     output$interactive_plot1 <- plotly::renderPlotly({
       interactive_plot1
     })
@@ -2720,54 +2746,64 @@ server <- function(input, output,session) {
   #actions for partial correlation
   observeEvent(input$mod7_go_partial_corr,{
     
+    #output_table <- metadata(D_differ_partial_corr())$results$output
+    output_table <- mt_stats_cormat_genenet_new(D_for_analysis(),
+                                                stat_name = input$stat_name_mod7)
+    # Display the table
+    print(output_table)
     
-    pdiffer_list$value <- get_plots_SE_differ(D_differ_partial_corr())
-    print(pdiffer_list$value)
-    pdiffer_list$length <-  pdiffer_list$value %>% length()
-    
-    output$mod7_main_panel  <- renderUI({
-      
-      mod7_output_plotlist <-   lapply(1: pdiffer_list$length, function(i){
-        local({
-          len_j <- length(pdiffer_list$value[[i]])
-          lapply(1:(len_j), function(j) {
-            
-            plotname <- paste("Plot_differ", i,j, sep="")
-            
-            plotOutput(plotname)
-            
-          })
-        })
-        
-        
-      })
-      
-      do.call(tagList, mod7_output_plotlist)
-      
-      
+    output$mod7_main_panel_2 <- renderDT({
+      datatable(output_table)
     })
     
-    lapply(1: pdiffer_list$length, function(i){
-      local({
-        
-        len_j <- length(pdiffer_list$value[[i]])
-        
-        lapply(1:(len_j), function(j) {
-          
-          plotname <- paste("Plot_differ", i,j, sep="")
-          
-          output[[plotname]] <-
-            renderPlot({
-              #grid.force()
-              pdiffer_list$value[[i]][j]
-              
-              #print(pdiffer_list$value[[i]][j])
-              
-            })
-        })
-      })
-      
-    })
+    
+    # pdiffer_list$value <- get_plots_SE_differ(D_differ_partial_corr())
+    # print(pdiffer_list$value)
+    # pdiffer_list$length <-  pdiffer_list$value %>% length()
+    # 
+    # output$mod7_main_panel  <- renderUI({
+    #   
+    #   mod7_output_plotlist <-   lapply(1: pdiffer_list$length, function(i){
+    #     local({
+    #       len_j <- length(pdiffer_list$value[[i]])
+    #       lapply(1:(len_j), function(j) {
+    #         
+    #         plotname <- paste("Plot_differ", i,j, sep="")
+    #         
+    #         plotOutput(plotname)
+    #         
+    #       })
+    #     })
+    #     
+    #     
+    #   })
+    #   
+    #   do.call(tagList, mod7_output_plotlist)
+    #   
+    #   
+    # })
+    # 
+    # lapply(1: pdiffer_list$length, function(i){
+    #   local({
+    #     
+    #     len_j <- length(pdiffer_list$value[[i]])
+    #     
+    #     lapply(1:(len_j), function(j) {
+    #       
+    #       plotname <- paste("Plot_differ", i,j, sep="")
+    #       
+    #       output[[plotname]] <-
+    #         renderPlot({
+    #           #grid.force()
+    #           pdiffer_list$value[[i]][j]
+    #           
+    #           #print(pdiffer_list$value[[i]][j])
+    #           
+    #         })
+    #     })
+    #   })
+    #   
+    # })
     
   })
   
@@ -2805,48 +2841,74 @@ server <- function(input, output,session) {
     #   feat_filter = p.value < 1,
     #   group_col = input$in_col_mod7
     # )
-    
-    p1 <- mt_plots_stats_pathway_bar_new(D_final_enrich(),
-                                         stat_list = sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""),
-                                         feat_filter = p.adj < input$mod7_sig_threshold_diff)
-    
-    
-    
-    
-    
-    interactive_plot1 <- plotly::style(interactive_plot1, tooltip = input$mod5_select_hover)
-    interactive_plot1 <- plotly::event_register(interactive_plot1, "plotly_hover")
-    
-    output$mod7_main_panel_1 <- renderUI({
-      plotly::plotlyOutput("interactive_plot1")
-    })
-    
-    output$interactive_plot1 <- plotly::renderPlotly({
-      interactive_plot1
-    })
+    # result <- get_stat_names(D_final_enrich)
+    # 
+    # # Print the result
+    # print(result)
+    # 
+    # 
+    # 
+    # 
+    # p1 <- mt_plots_stats_pathway_bar_new(D_final_enrich(),
+    #                                      stat_list = stat_list, #sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""),
+    #                                      feat_filter = p.adj < input$mod7_sig_threshold_diff)
+    # 
+    # 
+    # 
+    # 
+    # 
+    # interactive_plot1 <- plotly::style(interactive_plot1, tooltip = input$mod5_select_hover)
+    # interactive_plot1 <- plotly::event_register(interactive_plot1, "plotly_hover")
+    # 
+    # output$mod7_main_panel_1 <- renderUI({
+    #   plotly::plotlyOutput("interactive_plot1")
+    # })
+    # 
+    # output$interactive_plot1 <- plotly::renderPlotly({
+    #   interactive_plot1
+    # })
   })
   
   
   # Differential analysis D
+  # D_differ_tab_diff <- reactive({
+  #   
+  #   
+  #   D <- D_for_analysis()  %>%
+  #     mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
+  #     diff_analysis_func_tab(var=input$outcome_mod7_diff,
+  #                            binary=input$mod7_outcome_binary_diff,
+  #                            sample_filter = samp_filter_diff(),
+  #                            filter_val = input$mod7_filter_val_diff,
+  #                            covar_col_select = input$mod7_covar_col_select_diff,
+  #                            covar_row_select = input$mod7_covar_row_select_diff,
+  #                            analysis_type=input$mod7_analysis_type_diff,
+  #                            mult_test_method=input$mod7_mult_test_method_diff,
+  #                            alpha=input$mod7_sig_threshold_diff,
+  #                            group_col_barplot = input$group_col_barplot_mod7_diff) %>%
+  #     {.}
+  #   ## return D
+  #   D
+  # }) 
+  
+  #SE object withSpinner:
   D_differ_tab_diff <- reactive({
-    
-    
-    D <- D_for_analysis()  %>%
+    D_for_analysis()  %>%
       mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
-      diff_analysis_func_tab(var=input$outcome_mod7_diff,
-                             binary=input$mod7_outcome_binary_diff,
+      diff_analysis_func_tab(var = input$outcome_mod7_diff,
+                             binary = input$mod7_outcome_binary_diff,
                              sample_filter = samp_filter_diff(),
                              filter_val = input$mod7_filter_val_diff,
                              covar_col_select = input$mod7_covar_col_select_diff,
                              covar_row_select = input$mod7_covar_row_select_diff,
-                             analysis_type=input$mod7_analysis_type_diff,
-                             mult_test_method=input$mod7_mult_test_method_diff,
-                             alpha=input$mod7_sig_threshold_diff,
-                             group_col_barplot = input$group_col_barplot_mod7_diff) %>%
-      {.}
-    ## return D
-    D
+                             analysis_type = input$mod7_analysis_type_diff,
+                             mult_test_method = input$mod7_mult_test_method_diff,
+                             alpha = input$mod7_sig_threshold_diff,
+                             group_col_barplot = input$group_col_barplot_mod7_diff)
+    
   })
+  
+  
   
   
   # Correlation analysis D
@@ -2887,8 +2949,8 @@ server <- function(input, output,session) {
     
     D <- D_for_analysis()  %>%
       mt_reporting_heading(heading = "Partial Correlation Network", lvl = 2) %>%
-      mt_stats_cormat_genenet(stat_name = input$stat_name_mod7) %>%
-      mt_plots_net(stat_name = input$stat_name_mod7) %>%
+      mt_stats_cormat_genenet_new(stat_name = input$stat_name_mod7) %>%
+      #mt_plots_net(stat_name = input$stat_name_mod7) %>%
       mt_post_multtest(stat_name = input$stat_name_mod7, method = "BH") %>%
       {.}
     ## return D

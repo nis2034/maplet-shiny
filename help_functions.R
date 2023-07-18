@@ -1,3 +1,4 @@
+
 # Extract the object names from result SE "D"------------
 get_obj_name <- function(D){
   obj_list <- data.frame()
@@ -448,6 +449,7 @@ diff_analysis_func_tab <- function(D,
   }
   
   if(binary){
+    print("binary analysis")
     D %<>%
       mt_post_fold_change(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")))
   }
@@ -1719,7 +1721,9 @@ mt_plots_box_scatter_new <- function(D,
   ## SPLIT TO MULTIPLE PAGES
   # if there is no plot, create a single empty page
   if (length(unique(stat$name))==0) {
-    p <- list(ggplot() + geom_text(aes(x=0, y=0, label='no plots'), size=10))
+    print("this 1")
+    
+    p <- ggplot() + geom_text(aes(x = 0, y = 0, label = 'no plots'), size = 10)
     output2 <- NULL
     
     D %<>%
@@ -1730,8 +1734,14 @@ mt_plots_box_scatter_new <- function(D,
         output2 = output2
       )
     
+    interactive_plot <- plotly::ggplotly(p)
+    
+    # Return the interactive plot
+    interactive_plot
+    
   } else if(pages) {
     
+    print("this 2")
     npages <- ceiling(length(unique(stat$name))/8)
     tmp <- lapply(1:npages, function(x){
       p + ggforce::facet_wrap_paginate(.~name, scales = "free", ncol = 2, nrow = 4, page=x)
@@ -1747,6 +1757,12 @@ mt_plots_box_scatter_new <- function(D,
         output = p,
         output2 = output2
       )
+    
+    # Convert ggplot object to plotly object
+    interactive_plot <- plotly::ggplotly(p)
+    
+    # Return the interactive plot
+    interactive_plot
     
   }else {
     p <- p + facet_wrap(.~name, scales = "free", ncol=2)
@@ -2231,4 +2247,68 @@ mti_generate_result <- function(
   )
   
   D
+}
+
+
+
+
+
+mt_stats_cormat_genenet_new = function(D, stat_name, samp_filter) {
+  
+  # validate and extract arguments
+  stopifnot("SummarizedExperiment" %in% class(D))
+  X = t(assay(D))
+  
+  ## stat_name
+  if(missing(stat_name))
+    stop("stat_name must be given")
+  ## check for NA and throw an error if yes
+  if(any(is.na(X)))
+    stop("the data matrix contains NAs")
+  
+  ## FILTER SAMPLES
+  if(!missing(samp_filter)) {
+    
+    filter_q <- dplyr::enquo(samp_filter)
+    num_samp <- ncol(D)
+    samples.used <- mti_filter_samples(Ds, filter_q, num_samp)
+    Ds <- Ds[samples.used,]
+    
+  } else {
+    samples.used = rep(T, ncol(D))
+  }
+  
+  # filter
+  X <- X[samples.used,]
+  
+  # compute partial correlation using GeneNet
+  pcor_GeneNet <- GeneNet::ggm.estimate.pcor(as.matrix(X), method = "dynamic", verbose=FALSE)
+  pval_GeneNet <- GeneNet::network.test.edges(pcor_GeneNet, plot=FALSE)
+  
+  # create result variables
+  node1 <- colnames(pcor_GeneNet)[pval_GeneNet$node1]
+  node2 <- colnames(pcor_GeneNet)[pval_GeneNet$node2]
+  var <- paste0(node1,"_",node2, sep="")
+  
+  # create result table
+  tab <- data.frame("var"=var, "statistic"=pval_GeneNet$pcor, "p.value"=pval_GeneNet$pval, "var1"=node1, "var2"=node2)
+  
+  # add status information
+  funargs <- mti_funargs()
+  D %<>% 
+    mti_generate_result(
+      funargs = funargs,
+      logtxt = 'GeneNet partial correlation',
+      output = list(
+        table = tab,
+        name = stat_name,
+        lstobj = NULL,
+        samples.used = samples.used,
+        outcome = NA
+      )
+    )
+  
+  # return
+  tab
+  
 }
