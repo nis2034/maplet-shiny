@@ -645,7 +645,9 @@ ui <- fluidPage(
                       identifiers")),
                          uiOutput("mod7_in_col"),
                          actionButton("mod7_go_path_enrich", "Run", width = "110px")
-                     )
+                     ),
+                     tags$hr(),
+                     downloadLink("download_link", "Download Report")
                      
                    ),
                    
@@ -3005,6 +3007,26 @@ server <- function(input, output,session) {
                                       stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""),
                                       cutoff = 0.4)
   })
+  
+  generate_report <- reactive({
+    
+    D_differ_tab_diff() %>% mt_reporting_html(file = "Example_Pipeline_Metabolite_Analysis.html",
+                                              title = "Example Pipeline - Statistical Analysis")
+    
+    return("Report generation successful!")
+  })
+  
+  # Provide a link to download the report (Code for downloadHandler)
+  output$download_link <- downloadHandler(
+    filename = function() {
+      "Example_Pipeline_Metabolite_Analysis.html"
+    },
+    content = function(file) {
+      # Call mt_reporting_html and save the report with the specified filename
+      mt_reporting_html(D_differ_tab_diff(), file = file, title = "Example Pipeline - Statistical Analysis")
+      # Note: Replace D with your actual SummarizedExperiment object.
+    }
+  )
   
   
   

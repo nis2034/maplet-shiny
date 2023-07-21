@@ -455,22 +455,22 @@ diff_analysis_func_tab <- function(D,
   }
   D %<>%
     mt_post_multtest(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")), method = mult_test_method) %>%
-  #   mt_reporting_stats(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")), stat_filter = p.adj < alpha) %>%
-  #   mt_plots_volcano(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
-  #                    x = !!sym(ifelse(binary,"fc","statistic")),
-  #                    feat_filter = p.adj < alpha,
-  #                    color = p.adj < alpha) %>%
-  #   mt_plots_box_scatter(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
-  #                        x = !!sym(var),
-  #                        plot_type = ifelse(binary,"box","scatter"),
-  #                        feat_filter = p.adj < alpha,
-  #                        feat_sort = p.value,
-  #                        annotation = "{sprintf('P-value: %.2e', p.value)}\nP.adj: {sprintf('%.2e', p.adj)}") %>%
-  #   mt_plots_stats_pathway_bar(stat_list = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
-  #                              y_scale = "count",
-  #                              feat_filter = p.adj < alpha,
-  #                              group_col = group_col_barplot,
-  #                              color_col = color_col_barplot) %>%
+    mt_reporting_stats(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")), stat_filter = p.adj < alpha) %>%
+    mt_plots_volcano(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+                     x = !!sym(ifelse(binary,"fc","statistic")),
+                     feat_filter = p.adj < alpha,
+                     color = p.adj < alpha) %>%
+    mt_plots_box_scatter(stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+                         x = !!sym(var),
+                         plot_type = ifelse(binary,"box","scatter"),
+                         feat_filter = p.adj < alpha,
+                         feat_sort = p.value,
+                         annotation = "{sprintf('P-value: %.2e', p.value)}\nP.adj: {sprintf('%.2e', p.adj)}") %>%
+    mt_plots_stats_pathway_bar(stat_list = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+                               y_scale = "count",
+                               feat_filter = p.adj < alpha,
+                               group_col = group_col_barplot,
+                               color_col = color_col_barplot) %>%
     {.}
 
   return(D)
