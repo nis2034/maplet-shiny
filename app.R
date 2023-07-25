@@ -1489,50 +1489,60 @@ server <- function(input, output,session) {
   #progress bar version
   observeEvent(input$mod2_go_missingness, {
     
-    pmissing_list$value <- get_plots_SE(D_missingness())
-    pmissing_list$length <-  pmissing_list$value %>% length()
+    tryCatch({
     
-    # Update D_for_analysis
-    D_for_analysis(D_missingness())
-    
-    # Calculate the total number of plots
-    total_plots <- pmissing_list$length
-    
-    # Initialize a variable to track the progress
-    progress <- 0
-    
-    # Function to increment progress
-    updateProgress <- function() {
-      progress <<- progress + 1
-    }
-    
-    # Render the plots
-    output$mod2_main_panel <- renderUI({
-      mod2_output_plotlist <- lapply(1:total_plots, function(i) {
+      pmissing_list$value <- get_plots_SE(D_missingness())
+      pmissing_list$length <-  pmissing_list$value %>% length()
+      
+      # Update D_for_analysis
+      D_for_analysis(D_missingness())
+      
+      # Calculate the total number of plots
+      total_plots <- pmissing_list$length
+      
+      # Initialize a variable to track the progress
+      progress <- 0
+      
+      # Function to increment progress
+      updateProgress <- function() {
+        progress <<- progress + 1
+      }
+      
+      # Render the plots
+      output$mod2_main_panel <- renderUI({
+        mod2_output_plotlist <- lapply(1:total_plots, function(i) {
+          local({
+            len_j <- length(pmissing_list$value[[i]])
+            lapply(1:len_j, function(j) {
+              plotname <- paste("Plot", i, j, sep = "")
+              plotOutput(plotname) %>% withSpinner()
+            })
+          })
+        })
+        
+        do.call(tagList, mod2_output_plotlist)
+      })
+      
+      # Render individual plots
+      lapply(1:total_plots, function(i) {
         local({
           len_j <- length(pmissing_list$value[[i]])
           lapply(1:len_j, function(j) {
             plotname <- paste("Plot", i, j, sep = "")
-            plotOutput(plotname) %>% withSpinner()
+            output[[plotname]] <- renderPlot({
+              updateProgress()
+              pmissing_list$value[[i]][j]
+            })
           })
         })
       })
       
-      do.call(tagList, mod2_output_plotlist)
-    })
-    
-    # Render individual plots
-    lapply(1:total_plots, function(i) {
-      local({
-        len_j <- length(pmissing_list$value[[i]])
-        lapply(1:len_j, function(j) {
-          plotname <- paste("Plot", i, j, sep = "")
-          output[[plotname]] <- renderPlot({
-            updateProgress()
-            pmissing_list$value[[i]][j]
-          })
-        })
-      })
+    }, error = function(e) {
+      # Show the error message to the user using showNotification
+      showNotification(
+        glue::glue("An error occurred: {e$message}"),
+        type = "error"
+      )
     })
     
 
@@ -1558,61 +1568,71 @@ server <- function(input, output,session) {
     #                       style="white-space:pre-wrap;")
     # })
     
-    pimpute_list$value <- get_plots_SE_preprocess(D_impute(), title = c("Original","After imputation"))
-    pimpute_list$length <-  pimpute_list$value %>% length()
+    tryCatch({
     
-    # Update D_for_analysis
-    D_for_analysis(D_impute())
-    
-    # Initialize a variable to track the progress
-    progress <- 0
-    
-    # Function to increment progress
-    updateProgress <- function() {
-      progress <<- progress + 1
-    }
-    
-    output$mod2_main_panel  <- renderUI({
-      mod2_output_plotlist <-   lapply(1: pimpute_list$length, function(i){
+      pimpute_list$value <- get_plots_SE_preprocess(D_impute(), title = c("Original","After imputation"))
+      pimpute_list$length <-  pimpute_list$value %>% length()
+      
+      # Update D_for_analysis
+      D_for_analysis(D_impute())
+      
+      # Initialize a variable to track the progress
+      progress <- 0
+      
+      # Function to increment progress
+      updateProgress <- function() {
+        progress <<- progress + 1
+      }
+      
+      output$mod2_main_panel  <- renderUI({
+        mod2_output_plotlist <-   lapply(1: pimpute_list$length, function(i){
+          local({
+            len_j <- length(pimpute_list$value[[i]])
+            lapply(1:(len_j), function(j) {
+              
+              plotname <- paste("Plot", i,j, sep="")
+              #print(paste0("The value of my variable from UI is ", plotname))
+              
+              plotOutput(plotname) %>% withSpinner()
+              
+            })
+          })
+          
+          
+        })
+        
+        do.call(tagList, mod2_output_plotlist)
+        
+      })
+      
+      
+      lapply(1: pimpute_list$length, function(i){
         local({
+          
           len_j <- length(pimpute_list$value[[i]])
+          
           lapply(1:(len_j), function(j) {
             
             plotname <- paste("Plot", i,j, sep="")
-            #print(paste0("The value of my variable from UI is ", plotname))
             
-            plotOutput(plotname) %>% withSpinner()
-            
+            output[[paste("Plot", i,j, sep="")]] <-
+              renderPlot({
+                #grid.force()
+                updateProgress()
+                pimpute_list$value[[i]][j]
+                
+              })
           })
         })
         
-        
       })
       
-      do.call(tagList, mod2_output_plotlist)
-      
-    })
-    
-    
-    lapply(1: pimpute_list$length, function(i){
-      local({
-        
-        len_j <- length(pimpute_list$value[[i]])
-        
-        lapply(1:(len_j), function(j) {
-          
-          plotname <- paste("Plot", i,j, sep="")
-          
-          output[[paste("Plot", i,j, sep="")]] <-
-            renderPlot({
-              #grid.force()
-              updateProgress()
-              pimpute_list$value[[i]][j]
-              
-            })
-        })
-      })
-      
+    },error = function(e) {
+      # Show the error message to the user using showNotification
+      showNotification(
+        glue::glue("An error occurred: {e$message}"),
+        type = "error"
+      )
     })
     
   })
@@ -1627,75 +1647,97 @@ server <- function(input, output,session) {
     #                       style="white-space:pre-wrap;")
     # })
     
-    pnorm_list$value <- get_plots_SE_preprocess(D_norm(), title = c("Original","After normalization"))
-    pnorm_list$length <-  pnorm_list$value %>% length()
+    tryCatch({
     
-    # Update D_for_analysis
-    D_for_analysis(D_norm())
-    
-    
-    output$mod2_main_panel  <- renderUI({
+      pnorm_list$value <- get_plots_SE_preprocess(D_norm(), title = c("Original","After normalization"))
+      pnorm_list$length <-  pnorm_list$value %>% length()
+      
+      # Update D_for_analysis
+      D_for_analysis(D_norm())
       
       
+      output$mod2_main_panel  <- renderUI({
+        
+        
+        
+        mod2_output_plotlist <-   lapply(1: pnorm_list$length, function(i){
+          local({
+            len_j <- length(pnorm_list$value[[i]])
+            lapply(1:(len_j), function(j) {
+              
+              plotname <- paste("Plot", i,j, sep="")
+              #print(paste0("The value of my variable from UI is ", plotname))
+              
+              plotOutput(plotname)
+              
+            })
+          })
+          
+          
+        })
+        
+        do.call(tagList, mod2_output_plotlist)
+        
+      })
       
-      mod2_output_plotlist <-   lapply(1: pnorm_list$length, function(i){
+      lapply(1: pnorm_list$length, function(i){
         local({
+          
           len_j <- length(pnorm_list$value[[i]])
+          
           lapply(1:(len_j), function(j) {
             
             plotname <- paste("Plot", i,j, sep="")
-            #print(paste0("The value of my variable from UI is ", plotname))
             
-            plotOutput(plotname)
-            
+            output[[paste("Plot", i,j, sep="")]] <-
+              renderPlot({
+                #grid.force()
+                pnorm_list$value[[i]][j]
+                
+              })
           })
         })
         
-        
       })
-      
-      do.call(tagList, mod2_output_plotlist)
-      
-    })
-    
-    lapply(1: pnorm_list$length, function(i){
-      local({
-        
-        len_j <- length(pnorm_list$value[[i]])
-        
-        lapply(1:(len_j), function(j) {
-          
-          plotname <- paste("Plot", i,j, sep="")
-          
-          output[[paste("Plot", i,j, sep="")]] <-
-            renderPlot({
-              #grid.force()
-              pnorm_list$value[[i]][j]
-              
-            })
-        })
-      })
-      
+    },error = function(e) {
+      # Show the error message to the user using showNotification
+      showNotification(
+        glue::glue("An error occurred: {e$message}"),
+        type = "error"
+      )
     })
     
   })
   
   # get proprocessing SE
   D_missingness <- reactive({
-    ## preprocessing D
-    D <- D() %>%
-      mt_reporting_heading(heading = "Preprocessing", lvl=1) %>%
-      mt_reporting_heading(heading = "Filtering", lvl = 2) %>%
-      mt_plots_missingness(feat_max=(input$mod2_filter_feat_max)/100,samp_max = (input$mod2_filter_sample_max)/100) %>%
-      mt_pre_filter_missingness(feat_max = (input$mod2_filter_feat_max)/100, samp_max = (input$mod2_filter_sample_max)/100) %>%
-      mt_plots_missingness(feat_max=(input$mod2_filter_feat_max)/100, samp_max = (input$mod2_filter_sample_max)/100) %>%
-      mt_anno_missingness(anno_type = "samples", out_col = "missing") %>%
-      mt_anno_missingness(anno_type = "features", out_col = "missing") %>%
-      mt_reporting_heading(heading = "Normalization", lvl = 2) %>%
-      mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column_mod2), title = "Original", plot_logged = T) %>%
-      {.}
+    # Initialize an empty result
+    D <- NULL
     
-    ## return D
+    # Use tryCatch to handle errors
+    tryCatch({
+      # Your original code block
+      D <- D() %>%
+        mt_reporting_heading(heading = "Preprocessing", lvl = 1) %>%
+        mt_reporting_heading(heading = "Filtering", lvl = 2) %>%
+        mt_plots_missingness(feat_max = (input$mod2_filter_feat_max) / 100, samp_max = (input$mod2_filter_sample_max) / 100) %>%
+        mt_pre_filter_missingness(feat_max = (input$mod2_filter_feat_max) / 100, samp_max = (input$mod2_filter_sample_max) / 100) %>%
+        mt_plots_missingness(feat_max = (input$mod2_filter_feat_max) / 100, samp_max = (input$mod2_filter_sample_max) / 100) %>%
+        mt_anno_missingness(anno_type = "samples", out_col = "missing") %>%
+        mt_anno_missingness(anno_type = "features", out_col = "missing") %>%
+        mt_reporting_heading(heading = "Normalization", lvl = 2) %>%
+        mt_plots_sample_boxplot(color = !!sym(input$pre_sample_color_column_mod2), title = "Original", plot_logged = T)
+    }, error = function(e) {
+      # Handle the error here
+      # You can show a notification or error message to the user
+      showNotification(e$message, type = "error")
+      # You can also print the error message to the console for debugging
+      print(paste("Error:", e))
+      # Return NULL to indicate no valid result
+      NULL
+    })
+    
+    # Return the resulting D (could be NULL if an error occurred)
     D
   })
   
@@ -1703,64 +1745,85 @@ server <- function(input, output,session) {
   
   
   
-  D_impute <- reactive({ 
+  
+  D_impute <- reactive({
+    # Initialize an empty result
+    D <- NULL
     
-    D <- D_for_analysis()
-    
-    
-    if(input$mod2_impute_type == "Min value"){
+    # Use tryCatch to handle errors
+    tryCatch({
+      # Your original code block
+      D <- D_for_analysis()
       
-      D %<>%
-        mt_pre_impute_min() 
-    }else
-    {
-      D %<>%
-        mt_pre_impute_knn(k = input$mod2_k_knn) 
-    }
-    
-    D %<>%
-      mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column_mod2), title = "After imputation", plot_logged = T) %>%
-      mt_pre_outlier_detection_univariate() %>%
-      mt_reporting_data() %>%
+      if (input$mod2_impute_type == "Min value") {
+        D <- D %>% mt_pre_impute_min() 
+      } else {
+        D <- D %>% mt_pre_impute_knn(k = input$mod2_k_knn) 
+      }
       
-      {.}
+      D <- D %>% mt_plots_sample_boxplot(color = !!sym(input$pre_sample_color_column_mod2),
+                                         title = "After imputation", plot_logged = T) %>%
+        mt_pre_outlier_detection_univariate() %>%
+        mt_reporting_data()
+    }, error = function(e) {
+      # Handle the error here
+      # You can show a notification or error message to the user
+      showNotification(e$message, type = "error")
+      # You can also print the error message to the console for debugging
+      print(paste("Error:", e))
+      # Return NULL to indicate no valid result
+      NULL
+    })
     
+    # Return the resulting D (could be NULL if an error occurred)
     D
   })
   
-  D_norm <- reactive({ 
+  
+  
+  D_norm <- reactive({
+    # Initialize an empty result
+    D <- NULL
     
-    D <- D_for_analysis() 
-    #print(dim(D))
-    #D <- D %>%
-    #  mt_pre_trans_exp()
-    
-    if(input$mod2_norm_type == "probabilistic quotient"){
+    # Use tryCatch to handle errors
+    tryCatch({
+      # Your original code block
+      D <- D_for_analysis() 
       
-      D <- D %>%
-        #mt_pre_trans_exp() %>% commenting for simulated_data
-        #mt_reporting_heading(heading = "STEP1") %>%
-        mt_pre_norm_quot(feat_max = (input$mod2_norm_feat_max)/100, ref_samples = (!!sym(input$mod2_reference_samp) == input$mod2_reference_val)) %>%
-        #mt_reporting_heading(heading = "STEP2") %>%
-        mt_plots_dilution_factor(in_col=input$pre_sample_color_column_mod2) 
-    }else
-    {
+      if (input$mod2_norm_type == "probabilistic quotient") {
+        D <- D %>%
+          #mt_pre_trans_exp() %>% commenting for simulated_data
+          #mt_reporting_heading(heading = "STEP1") %>%
+          mt_pre_norm_quot(feat_max = (input$mod2_norm_feat_max) / 100,
+                           ref_samples = (!!sym(input$mod2_reference_samp) == input$mod2_reference_val)) %>%
+          #mt_reporting_heading(heading = "STEP2") %>%
+          mt_plots_dilution_factor(in_col = input$pre_sample_color_column_mod2) 
+      } else {
+        D <- D %>%
+          #mt_pre_trans_exp() %>% simulated data
+          mt_pre_norm_external(col_name = input$mod2_ext_norm)
+      }
       
-      D <- D %>%
-        #mt_pre_trans_exp() %>% simulated data
-        mt_pre_norm_external(col_name=input$mod2_ext_norm)
-    }
-    if(input$mod2_trans_log){
+      if (input$mod2_trans_log) {
+        D <- D %>%
+          # mt_pre_trans_exp() %>% simulated_data
+          mt_pre_trans_log()
+      }
       
-      D <- D %>%
-        # mt_pre_trans_exp() %>% simulated_data
-        mt_pre_trans_log()
-    }
+      D <- D %>%     
+        mt_plots_sample_boxplot(color = !!sym(input$pre_sample_color_column_mod2),
+                                title = "After normalization", plot_logged = T)
+    }, error = function(e) {
+      # Handle the error here
+      # You can show a notification or error message to the user
+      showNotification(e$message, type = "error")
+      # You can also print the error message to the console for debugging
+      print(paste("Error:", e))
+      # Return NULL to indicate no valid result
+      NULL
+    })
     
-    D <- D %>%     
-      mt_plots_sample_boxplot(color=!!sym(input$pre_sample_color_column_mod2), title = "After normalization", plot_logged = T) %>%
-      {.}
-    
+    # Return the resulting D (could be NULL if an error occurred)
     D
   })
   
@@ -1930,116 +1993,67 @@ server <- function(input, output,session) {
   
   
   output$mod5_plot <- renderPlotly({
-    session_store$mod5_plotly <- switch(input$mod5_dimension,
-                                        "col"=
-                                          if(mod5_input()[2]==TRUE & mod5_input()[4]==TRUE){
-                                            mod5_scatter(D_for_analysis(), x=mod5_input()[3],
-                                                         y=mod5_input()[1],
-                                                         hover = input$mod5_select_hover)
-                                          } else if(mod5_input()[2]==TRUE & mod5_input()[4]==FALSE) {
-                                            mod5_boxplot(D_for_analysis(), x=mod5_input()[3],
-                                                         x_cate = FALSE,
-                                                         y=mod5_input()[1],
-                                                         y_cate = TRUE,
-                                                         fill=mod5_input()[3],
-                                                         hover=input$mod5_select_hover)
-                                          } else if(mod5_input()[2]==FALSE & mod5_input()[4]==TRUE) {
-                                            mod5_boxplot(D_for_analysis(), x=mod5_input()[1],
-                                                         x_cate = FALSE,
-                                                         y=mod5_input()[3],
-                                                         y_cate = TRUE,
-                                                         fill=mod5_input()[1],
-                                                         hover=input$mod5_select_hover)
-                                          } else {
-                                            mod5_barplot(D_for_analysis(), x=mod5_input()[3],
-                                                         fill=mod5_input()[1],
-                                                         hover = input$mod5_select_hover)
-                                          },
-                                        "row"=
-                                          rowData(D()) %>%
-                                          data.frame %>%
-                                          dplyr::rename(var=mod5_input()[5]) %>%
-                                          dplyr::group_by(var) %>%
-                                          dplyr::summarise(count=n()) %>%
-
-
-
-                                          plot_ly(labels = ~var,
-                                                  values = ~count,
-                                                  type = 'pie',
-                                                  textposition = 'inside',
-                                                  source="mod5-click",
-                                                  title= sprintf("<b>Distribution of %s</b>",mod5_input()[5])),
-                                        layout(autosize = F, width = 1000, height = 500,
-                                               uniformtext=list(minsize=12, mode='hide'),
-                                               legend = list(x = 1,
-                                                             y = .5,
-                                                             tracegroupgap = 5)
-                                        )
-    )
-    session_store$mod5_plotly
-  }
-  )
-  
-  
-  # output$mod5_plot <- renderPlotly({
-  #   withSpinner({
-  #     session_store$mod5_plotly <- switch(input$mod5_dimension,
-  #                                         "col" = {
-  #                                           if (mod5_input()[2] == TRUE & mod5_input()[4] == TRUE) {
-  #                                             mod5_scatter(D_for_analysis(), x = mod5_input()[3], 
-  #                                                          y = mod5_input()[1], 
-  #                                                          hover = input$mod5_select_hover)
-  #                                           } else if (mod5_input()[2] == TRUE & mod5_input()[4] == FALSE) {
-  #                                             mod5_boxplot(D_for_analysis(), x = mod5_input()[3], 
-  #                                                          x_cate = FALSE,
-  #                                                          y = mod5_input()[1],
-  #                                                          y_cate = TRUE,
-  #                                                          fill = mod5_input()[3], 
-  #                                                          hover = input$mod5_select_hover)
-  #                                           } else if (mod5_input()[2] == FALSE & mod5_input()[4] == TRUE) {
-  #                                             mod5_boxplot(D_for_analysis(), x = mod5_input()[1], 
-  #                                                          x_cate = FALSE,
-  #                                                          y = mod5_input()[3],
-  #                                                          y_cate = TRUE,
-  #                                                          fill = mod5_input()[1], 
-  #                                                          hover = input$mod5_select_hover)
-  #                                           } else {
-  #                                             mod5_barplot(D_for_analysis(), x = mod5_input()[3], 
-  #                                                          fill = mod5_input()[1], 
-  #                                                          hover = input$mod5_select_hover)
-  #                                           }
-  #                                         },
-  #                                         "row" = {
-  #                                           rowData(D()) %>%
-  #                                             data.frame() %>%
-  #                                             dplyr::rename(var = mod5_input()[5]) %>%
-  #                                             dplyr::group_by(var) %>%
-  #                                             dplyr::summarise(count = n()) %>%
-  #                                             plot_ly(
-  #                                               labels = ~var, 
-  #                                               values = ~count, 
-  #                                               type = 'pie',
-  #                                               textposition = 'inside',
-  #                                               source = "mod5-click",
-  #                                               title = sprintf("<b>Distribution of %s</b>", mod5_input()[5])
-  #                                             )
-  #                                         }
-  #     )
-  #   })
-  #   
-  #   layout(autosize = FALSE, width = 1000, height = 500,
-  #          uniformtext = list(minsize = 12, mode = 'hide'),
-  #          legend = list(x = 1, y = 0.5, tracegroupgap = 5)
-  #   )
-  #   
-  #   session_store$mod5_plotly
-  # })
-  # 
+    tryCatch({
+      session_store$mod5_plotly <- switch(input$mod5_dimension,
+                                          "col"=
+                                            if(mod5_input()[2]==TRUE & mod5_input()[4]==TRUE){
+                                              mod5_scatter(D_for_analysis(), x=mod5_input()[3],
+                                                           y=mod5_input()[1],
+                                                           hover = input$mod5_select_hover)
+                                              
+                                              
+                                            } else if(mod5_input()[2]==TRUE & mod5_input()[4]==FALSE) {
+                                              mod5_boxplot(D_for_analysis(), x=mod5_input()[3],
+                                                           x_cate = FALSE,
+                                                           y=mod5_input()[1],
+                                                           y_cate = TRUE,
+                                                           fill=mod5_input()[3],
+                                                           hover=input$mod5_select_hover)
+                                            } else if(mod5_input()[2]==FALSE & mod5_input()[4]==TRUE) {
+                                              mod5_boxplot(D_for_analysis(), x=mod5_input()[1],
+                                                           x_cate = FALSE,
+                                                           y=mod5_input()[3],
+                                                           y_cate = TRUE,
+                                                           fill=mod5_input()[1],
+                                                           hover=input$mod5_select_hover)
+                                            } else {
+                                              mod5_barplot(D_for_analysis(), x=mod5_input()[3],
+                                                           fill=mod5_input()[1],
+                                                           hover = input$mod5_select_hover)
+                                            },
+                                          "row"=
+                                            rowData(D()) %>%
+                                            data.frame %>%
+                                            dplyr::rename(var=mod5_input()[5]) %>%
+                                            dplyr::group_by(var) %>%
+                                            dplyr::summarise(count=n()) %>%
   
   
   
+                                            plot_ly(labels = ~var,
+                                                    values = ~count,
+                                                    type = 'pie',
+                                                    textposition = 'inside',
+                                                    source="mod5-click",
+                                                    title= sprintf("<b>Distribution of %s</b>",mod5_input()[5])),
+                                          layout(autosize = F, width = 1000, height = 500,
+                                                 uniformtext=list(minsize=12, mode='hide'),
+                                                 legend = list(x = 1,
+                                                               y = .5,
+                                                               tracegroupgap = 5)
+                                          )
+      )
+      session_store$mod5_plotly
+  }, error = function(e) {
+    # Handle the error here
+    # You can show a notification or error message to the user
+    showNotification(e$message, type = "error")
+    # You can also print the error message to the console for debugging purposes
+    print(paste("Error in renderPlotly:", e))
+  })
+})  
   
+ 
   
   # download button
   output$mod5_download_plotly <- downloadHandler(
@@ -2047,7 +2061,15 @@ server <- function(input, output,session) {
       paste("data-", Sys.Date(), ".html", sep = "")
     },
     content = function(file) {
-      saveWidget(as_widget(session_store$mod5_plotly), file, selfcontained = TRUE)
+      tryCatch({
+        saveWidget(as_widget(session_store$mod5_plotly), file, selfcontained = TRUE)
+      }, error = function(e) {
+        # Handle the error here
+        # You can show a notification or error message to the user
+        showNotification(e$message, type = "error")
+        # You can also print the error message to the console for debugging purposes
+        print(paste("Error in downloadHandler:", e))
+      })
     }
   )
   
@@ -2060,42 +2082,63 @@ server <- function(input, output,session) {
   # })
   
   output$mod5_plot2 <- renderPlotly({
-    d5 <- event_data("plotly_click", source = "mod5-click")
-    pie_dat <- as.data.frame(rowData(D()))
     
-    if (!is.null(d5)){
-      lvls <- rev(pie_dat$SUPER_PATHWAY)
-      label <- lvls[round(as.numeric(d5$pointNumber))+1]
+    tryCatch({
+      d5 <- event_data("plotly_click", source = "mod5-click")
+      pie_dat <- as.data.frame(rowData(D()))
       
-      session_store$mod5_plot2 <- 
-        pie_dat[pie_dat$SUPER_PATHWAY == label, ] %>%
-        dplyr::rename(var="SUB_PATHWAY") %>%
-        dplyr::group_by(var) %>%
-        dplyr::summarise(count=n()) %>%
-        plot_ly(labels = ~var, 
-                values = ~count, 
-                type = 'pie', 
-                textposition = 'inside',
-                title=paste0("<b>Distribution of Sub Pathway in Specified Super Pathway - </b>", label)
-        ) %>%
-        layout(autosize = F, width = 1000, height = 500,
-               uniformtext=list(minsize=12, mode='hide'),
-               legend = list(x = 1,
-                             y = .5,
-                             tracegroupgap = 5)
-        )
-      session_store$mod5_plot2
-    }
+      if (!is.null(d5)){
+        lvls <- rev(pie_dat$SUPER_PATHWAY)
+        label <- lvls[round(as.numeric(d5$pointNumber))+1]
+        
+        session_store$mod5_plot2 <- 
+          pie_dat[pie_dat$SUPER_PATHWAY == label, ] %>%
+          dplyr::rename(var="SUB_PATHWAY") %>%
+          dplyr::group_by(var) %>%
+          dplyr::summarise(count=n()) %>%
+          plot_ly(labels = ~var, 
+                  values = ~count, 
+                  type = 'pie', 
+                  textposition = 'inside',
+                  title=paste0("<b>Distribution of Sub Pathway in Specified Super Pathway - </b>", label)
+          ) %>%
+          layout(autosize = F, width = 1000, height = 500,
+                 uniformtext=list(minsize=12, mode='hide'),
+                 legend = list(x = 1,
+                               y = .5,
+                               tracegroupgap = 5)
+          )
+        session_store$mod5_plot2
+      }
+    }, error = function(e) {
+      # Handle the error here
+      # You can show a notification or error message to the user
+      showNotification(e$message, type = "error")
+      # You can also print the error message to the console for debugging purposes
+      print(paste("Error in renderPlotly (mod5_plot2):", e))
+    })
+    
   })
+  
+  
   # download button
   output$mod5_download_plotly2 <- downloadHandler(
     filename = function() {
       paste("data-", Sys.Date(), ".html", sep = "")
     },
     content = function(file) {
-      saveWidget(as_widget(session_store$mod5_plotly2), file, selfcontained = TRUE)
+      tryCatch({
+        saveWidget(as_widget(session_store$mod5_plotly2), file, selfcontained = TRUE)
+      }, error = function(e) {
+        # Handle the error here
+        # You can show a notification or error message to the user
+        showNotification(e$message, type = "error")
+        # You can also print the error message to the console for debugging purposes
+        print(paste("Error in downloadHandler (mod5_plot2):", e))
+      })
     }
   )
+  
   
   # Define rendering logic of control widgets in Module-2D projection(coded as mod3) ------------------------
   output$mod3_pca_data <- renderUI({
@@ -2247,34 +2290,44 @@ server <- function(input, output,session) {
   
   # render pca/umap of mod3
   output$mod3_plot <- renderPlotly({
-    session_store$mod3_plotly <- if (mod3_input_object()[1]=="pca"){
-      mod3_plots_pca(D = D_for_analysis(),
-                     scale_data = mod3_input_object()[3],
-                     color = mod3_input_object()[2],
-                     categorizing=mod3_input_object()[4],
-                     data_type = mod3_input_object()[5],
-                     hover = input$mod3_select_hover
-      )
-    } else if (mod3_input_object()[1]=="umap"){
-      print("true")
-      mod3_plots_umap(D = D_for_analysis(),
-                      scale_data = mod3_input_object()[3],  
-                      color = mod3_input_object()[2],
-                      categorizing=mod3_input_object()[4],
-                      n_neighbors = as.numeric(mod3_input_object()[6]),
-                      hover = input$mod3_select_hover
-      )
-    } else
-      mod3_plots_pls(D = D_for_analysis(),
-                     subgroupvar  = input$mod3_select_subgroup,
-                     # ndim = input$mod3_pls_n_dim,
-                     hover = input$mod3_select_hover
-                     
-                     
-      )
     
-    session_store$mod3_plotly
+    tryCatch({
+      session_store$mod3_plotly <- if (mod3_input_object()[1]=="pca"){
+        mod3_plots_pca(D = D_for_analysis(),
+                       scale_data = mod3_input_object()[3],
+                       color = mod3_input_object()[2],
+                       categorizing=mod3_input_object()[4],
+                       data_type = mod3_input_object()[5],
+                       hover = input$mod3_select_hover
+        )
+      } else if (mod3_input_object()[1]=="umap"){
+        print("true")
+        mod3_plots_umap(D = D_for_analysis(),
+                        scale_data = mod3_input_object()[3],  
+                        color = mod3_input_object()[2],
+                        categorizing=mod3_input_object()[4],
+                        n_neighbors = as.numeric(mod3_input_object()[6]),
+                        hover = input$mod3_select_hover
+        )
+      } else
+        mod3_plots_pls(D = D_for_analysis(),
+                       subgroupvar  = input$mod3_select_subgroup,
+                       # ndim = input$mod3_pls_n_dim,
+                       hover = input$mod3_select_hover
+                       
+                       
+        )
+      
+      session_store$mod3_plotly
+    }, error = function(e) {
+      # Handle the error here
+      # You can show a notification or error message to the user
+      showNotification(e$message, type = "error")
+      # You can also print the error message to the console for debugging purposes
+      print(paste("Error in renderPlotly (mod3_plot):", e))
+    })
   })
+  
   
   # download button
   output$mod3_download_plotly <- downloadHandler(
@@ -2282,9 +2335,18 @@ server <- function(input, output,session) {
       paste("data-", Sys.Date(), ".html", sep = "")
     },
     content = function(file) {
-      saveWidget(as_widget(session_store$mod3_plotly), file, selfcontained = TRUE)
+      tryCatch({
+        saveWidget(as_widget(session_store$mod3_plotly), file, selfcontained = TRUE)
+      }, error = function(e) {
+        # Handle the error here
+        # You can show a notification or error message to the user
+        showNotification(e$message, type = "error")
+        # You can also print the error message to the console for debugging purposes
+        print(paste("Error in downloadHandler (mod3_plotly):", e))
+      })
     }
   )
+  
   
   # Define rendering logic of control widgets in Module-All Results Explorer(coded as mod1) ------------------------
   
@@ -2505,67 +2567,159 @@ server <- function(input, output,session) {
   })
   
   # Define rendering logic of outputs in Module-Differential Expression Analysis(coded as mod7) ------------------------------
-    
+    D_download <- reactiveVal()
   
     observeEvent(input$mod7_go_diff,{
 
+      tryCatch({
 
+        print("done")
+        D_download(D_differ_tab_diff())
+        print(class(D_differ_tab_diff()))
+        
+  
+        covar_col_select <- input$mod7_covar_col_select_diff
+        covar_row_select <- input$mod7_covar_row_select_diff
+        var <- input$outcome_mod7_diff
+        if(is.null(covar_col_select) && is.null(covar_row_select))
+        {
+          covar = NULL
+        } else
+        {
+          covar <- paste("+", paste(c(covar_row_select,covar_col_select), collapse = "+"), sep = "")
+        }
+        
+        x <- if (input$mod7_outcome_binary_diff) {
+          "fc"
+        } else {
+          "statistic"
+        }
+        
+        p1 <- mt_plots_volcano_new(
+          D_differ_tab_diff(),
+          stat_name = sprintf("~  %s%s Analysis", var, replace(covar, is.null(covar), "")),
+          x = !!sym(x),
+          feat_filter = p.adj < input$mod7_sig_threshold_diff,
+          color = p.adj < input$mod7_sig_threshold_diff
+        )
+        
+        interactive_plot1 <- plotly::ggplotly(p1)
+        
+        interactive_plot1 <- plotly::style(interactive_plot1, tooltip = input$mod5_select_hover)
+        interactive_plot1 <- plotly::event_register(interactive_plot1, "plotly_hover") 
+        
+   
+        
+        output$mod7_main_panel_graph1 <- renderUI({
+          plotly::plotlyOutput("interactive_plot1") 
+        })
+        
+        output$interactive_plot1 <- plotly::renderPlotly({
+          interactive_plot1
+        })
+        
+        
+        plot_type <- if (input$mod7_outcome_binary_diff) {
+          "box"
+        } else {
+          "scatter"
+        }
+        
+        p2 <- mt_plots_box_scatter_new(D_differ_tab_diff(),
+                                       stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+                                       x = !!sym(var),
+                                       plot_type = plot_type,
+                                       feat_filter = p.adj < input$mod7_sig_threshold_diff,
+                                       feat_sort = p.value,
+                                       annotation = "{sprintf('P-value: %.2e', p.value)}\nP.adj: {sprintf('%.2e', p.adj)}")
+        
+        interactive_plot2 <- plotly::ggplotly(p2)
+        
+        interactive_plot2 <- plotly::style(interactive_plot2, tooltip = input$mod5_select_hover)
+        interactive_plot2 <- plotly::event_register(interactive_plot2, "plotly_hover")
+        
+  
+        output$mod7_main_panel_graph2 <- renderUI({
+          plotly::plotlyOutput("interactive_plot2") 
+        })
+        
+        output$interactive_plot2 <- plotly::renderPlotly({
+          interactive_plot2
+        })
+        
+       
+        
+        p3 <- mt_plots_stats_pathway_bar_new(D_differ_tab_diff(),
+                                             stat_list = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+                                             y_scale = "count",
+                                             feat_filter = p.adj < input$mod7_sig_threshold_diff,
+                                             group_col = input$group_col_barplot_mod7_diff)
+        
+        interactive_plot3 <- plotly::ggplotly(p3)
+        
+        interactive_plot3 <- plotly::style(interactive_plot3, tooltip = input$mod5_select_hover)
+        interactive_plot3 <- plotly::event_register(interactive_plot3, "plotly_hover")
+        
+        output$mod7_main_panel_graph3 <- renderUI({
+          plotlyOutput("interactive_plot3") 
+        })
+        
+        output$interactive_plot3 <- renderPlotly({
+          interactive_plot3
+        })
+    }, error = function(e) {
+      # Handle the error here
+      # You can show a notification or error message to the user
+      showNotification(e$message, type = "error")
+      # You can also print the error message to the console for debugging purposes
+      print(paste("Error in observeEvent (mod7_go_diff):", e))
+    })
+     
+  
+  })
+  
+  observeEvent(input$mod7_go_corr,{
+    
+    tryCatch({
+    
       print("done")
-      print(class(D_differ_tab_diff()))
+      print(class(D_differ_tab_corr()))
+      D_download(D_differ_tab_corr())
       
-
-      covar_col_select <- input$mod7_covar_col_select_diff
-      covar_row_select <- input$mod7_covar_row_select_diff
-      var <- input$outcome_mod7_diff
-      if(is.null(covar_col_select) && is.null(covar_row_select))
-      {
-        covar = NULL
-      } else
-      {
-        covar <- paste("+", paste(c(covar_row_select,covar_col_select), collapse = "+"), sep = "")
-      }
+      #covar_col_select <- input$mod7_covar_col_select_diff
+      #covar_row_select <- input$mod7_covar_row_select_diff
+      var <- input$outcome_mod7_corr
+      covar = NULL
+       
       
-      x <- if (input$mod7_outcome_binary_diff) {
-        "fc"
-      } else {
-        "statistic"
-      }
-      
-      p1 <- mt_plots_volcano_new(
-        D_differ_tab_diff(),
-        stat_name = sprintf("~  %s%s Analysis", var, replace(covar, is.null(covar), "")),
-        x = !!sym(x),
-        feat_filter = p.adj < input$mod7_sig_threshold_diff,
-        color = p.adj < input$mod7_sig_threshold_diff
-      )
-      
+      p1 <- mt_plots_volcano_new(D_differ_tab_corr(),
+                                 stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
+                                 x = !!sym(ifelse(input$mod7_outcome_binary_corr,"fc","statistic")),
+                                 feat_filter = p.adj < input$mod7_sig_threshold_corr,
+                                 color = p.adj < input$mod7_sig_threshold_corr)
+  
+  
+  
+  
       interactive_plot1 <- plotly::ggplotly(p1)
-      
+  
       interactive_plot1 <- plotly::style(interactive_plot1, tooltip = input$mod5_select_hover)
-      interactive_plot1 <- plotly::event_register(interactive_plot1, "plotly_hover") 
-      
- 
-      
+      interactive_plot1 <- plotly::event_register(interactive_plot1, "plotly_hover")
+  
       output$mod7_main_panel_graph1 <- renderUI({
-        plotly::plotlyOutput("interactive_plot1") 
+        plotly::plotlyOutput("interactive_plot1")
       })
-      
+  
       output$interactive_plot1 <- plotly::renderPlotly({
         interactive_plot1
       })
       
       
-      plot_type <- if (input$mod7_outcome_binary_diff) {
-        "box"
-      } else {
-        "scatter"
-      }
-      
-      p2 <- mt_plots_box_scatter_new(D_differ_tab_diff(),
+      p2 <- mt_plots_box_scatter_new(D_differ_tab_corr(),
                                      stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
                                      x = !!sym(var),
-                                     plot_type = plot_type,
-                                     feat_filter = p.adj < input$mod7_sig_threshold_diff,
+                                     plot_type = ifelse(input$mod7_outcome_binary_corr,"box","scatter"),
+                                     feat_filter = p.adj < input$mod7_sig_threshold_corr,
                                      feat_sort = p.value,
                                      annotation = "{sprintf('P-value: %.2e', p.value)}\nP.adj: {sprintf('%.2e', p.adj)}")
       
@@ -2574,22 +2728,19 @@ server <- function(input, output,session) {
       interactive_plot2 <- plotly::style(interactive_plot2, tooltip = input$mod5_select_hover)
       interactive_plot2 <- plotly::event_register(interactive_plot2, "plotly_hover")
       
-
       output$mod7_main_panel_graph2 <- renderUI({
-        plotly::plotlyOutput("interactive_plot2") 
+        plotly::plotlyOutput("interactive_plot2")
       })
       
       output$interactive_plot2 <- plotly::renderPlotly({
         interactive_plot2
       })
       
-     
-      
-      p3 <- mt_plots_stats_pathway_bar_new(D_differ_tab_diff(),
+      p3 <- mt_plots_stats_pathway_bar_new(D_differ_tab_corr(),
                                            stat_list = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
                                            y_scale = "count",
-                                           feat_filter = p.adj < input$mod7_sig_threshold_diff,
-                                           group_col = input$group_col_barplot_mod7_diff)
+                                           feat_filter = p.adj < input$mod7_sig_threshold_corr,
+                                           group_col = input$group_col_barplot_mod7_corr)
       
       interactive_plot3 <- plotly::ggplotly(p3)
       
@@ -2597,92 +2748,20 @@ server <- function(input, output,session) {
       interactive_plot3 <- plotly::event_register(interactive_plot3, "plotly_hover")
       
       output$mod7_main_panel_graph3 <- renderUI({
-        plotlyOutput("interactive_plot3") 
+        plotly::plotlyOutput("interactive_plot3")
       })
       
-      output$interactive_plot3 <- renderPlotly({
+      output$interactive_plot3 <- plotly::renderPlotly({
         interactive_plot3
       })
- 
-     
-  
-  })
-  
-  observeEvent(input$mod7_go_corr,{
-    
-    
-    print("done")
-    print(class(D_differ_tab_corr()))
-    
-    #covar_col_select <- input$mod7_covar_col_select_diff
-    #covar_row_select <- input$mod7_covar_row_select_diff
-    var <- input$outcome_mod7_corr
-    covar = NULL
-     
-    
-    p1 <- mt_plots_volcano_new(D_differ_tab_corr(),
-                               stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
-                               x = !!sym(ifelse(input$mod7_outcome_binary_corr,"fc","statistic")),
-                               feat_filter = p.adj < input$mod7_sig_threshold_corr,
-                               color = p.adj < input$mod7_sig_threshold_corr)
-
-
-
-
-    interactive_plot1 <- plotly::ggplotly(p1)
-
-    interactive_plot1 <- plotly::style(interactive_plot1, tooltip = input$mod5_select_hover)
-    interactive_plot1 <- plotly::event_register(interactive_plot1, "plotly_hover")
-
-    output$mod7_main_panel_graph1 <- renderUI({
-      plotly::plotlyOutput("interactive_plot1")
+    }, error = function(e) {
+      # Handle the error here
+      # You can show a notification or error message to the user
+      showNotification(e$message, type = "error")
+      # You can also print the error message to the console for debugging purposes
+      print(paste("Error in observeEvent (mod7_go_corr):", e))
     })
-
-    output$interactive_plot1 <- plotly::renderPlotly({
-      interactive_plot1
-    })
-    
-    
-    p2 <- mt_plots_box_scatter_new(D_differ_tab_corr(),
-                                   stat_name = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
-                                   x = !!sym(var),
-                                   plot_type = ifelse(input$mod7_outcome_binary_corr,"box","scatter"),
-                                   feat_filter = p.adj < input$mod7_sig_threshold_corr,
-                                   feat_sort = p.value,
-                                   annotation = "{sprintf('P-value: %.2e', p.value)}\nP.adj: {sprintf('%.2e', p.adj)}")
-    
-    interactive_plot2 <- plotly::ggplotly(p2)
-    
-    interactive_plot2 <- plotly::style(interactive_plot2, tooltip = input$mod5_select_hover)
-    interactive_plot2 <- plotly::event_register(interactive_plot2, "plotly_hover")
-    
-    output$mod7_main_panel_graph2 <- renderUI({
-      plotly::plotlyOutput("interactive_plot2")
-    })
-    
-    output$interactive_plot2 <- plotly::renderPlotly({
-      interactive_plot2
-    })
-    
-    p3 <- mt_plots_stats_pathway_bar_new(D_differ_tab_corr(),
-                                         stat_list = sprintf("~  %s%s Analysis",var, replace(covar, is.null(covar),"")),
-                                         y_scale = "count",
-                                         feat_filter = p.adj < input$mod7_sig_threshold_corr,
-                                         group_col = input$group_col_barplot_mod7_corr)
-    
-    interactive_plot3 <- plotly::ggplotly(p3)
-    
-    interactive_plot3 <- plotly::style(interactive_plot3, tooltip = input$mod5_select_hover)
-    interactive_plot3 <- plotly::event_register(interactive_plot3, "plotly_hover")
-    
-    output$mod7_main_panel_graph3 <- renderUI({
-      plotly::plotlyOutput("interactive_plot3")
-    })
-    
-    output$interactive_plot3 <- plotly::renderPlotly({
-      interactive_plot3
-    })
-    
+      
     
   })
   
@@ -2748,14 +2827,26 @@ server <- function(input, output,session) {
   #actions for partial correlation
   observeEvent(input$mod7_go_partial_corr,{
     
-    #output_table <- metadata(D_differ_partial_corr())$results$output
-    output_table <- mt_stats_cormat_genenet_new(D_for_analysis(),
-                                                stat_name = input$stat_name_mod7)
-    # Display the table
-    print(output_table)
+   
     
-    output$mod7_main_panel_2 <- renderDT({
-      datatable(output_table)
+    # Wrap the code in tryCatch to handle errors gracefully
+    tryCatch({
+    
+      # Get the pathway enrichment results
+      output_table <- mt_stats_cormat_genenet_new(D_for_analysis(),
+                                                  stat_name = input$stat_name_mod7)
+      # Display the table
+      print(output_table)
+      
+      output$mod7_main_panel_2 <- renderDT({
+        datatable(output_table)
+      })
+    }, error = function(e) {
+      # Show the error message to the user using showNotification
+      showNotification(
+        glue::glue("An error occurred: {e$message}"),
+        type = "error"
+      )
     })
     
     
@@ -2812,14 +2903,23 @@ server <- function(input, output,session) {
   
   #actions for pathway enrichment
   observeEvent(input$mod7_go_path_enrich, {
-    # Get the pathway enrichment results
-    print(D_final_enrich())
-    enrichment_results <- metadata(D_final_enrich())$pathways$enrichment_results
-    
-    print(class(enrichment_results))
-    # Display the results in the desired output element
-    output$mod7_main_panel_2 <- renderDT({
-      datatable(enrichment_results)
+    tryCatch({
+      # Get the pathway enrichment results
+      D_download(D_final_enrich())
+      print(D_final_enrich())
+      enrichment_results <- metadata(D_final_enrich())$pathways$enrichment_results
+      
+      print(class(enrichment_results))
+      # Display the results in the desired output element
+      output$mod7_main_panel_2 <- renderDT({
+        datatable(enrichment_results)
+      })
+    }, error = function(e) {
+      # Show the error message to the user using showNotification
+      showNotification(
+        glue::glue("An error occurred: {e$message}"),
+        type = "error"
+      )
     })
     
     
@@ -2895,19 +2995,29 @@ server <- function(input, output,session) {
   
   #SE object withSpinner:
   D_differ_tab_diff <- reactive({
-    D_for_analysis()  %>%
-      mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
-      diff_analysis_func_tab(var = input$outcome_mod7_diff,
-                             binary = input$mod7_outcome_binary_diff,
-                             sample_filter = samp_filter_diff(),
-                             filter_val = input$mod7_filter_val_diff,
-                             covar_col_select = input$mod7_covar_col_select_diff,
-                             covar_row_select = input$mod7_covar_row_select_diff,
-                             analysis_type = input$mod7_analysis_type_diff,
-                             mult_test_method = input$mod7_mult_test_method_diff,
-                             alpha = input$mod7_sig_threshold_diff,
-                             group_col_barplot = input$group_col_barplot_mod7_diff)
-    
+    tryCatch({
+      D_for_analysis()  %>%
+        mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
+        diff_analysis_func_tab(var = input$outcome_mod7_diff,
+                               binary = input$mod7_outcome_binary_diff,
+                               sample_filter = samp_filter_diff(),
+                               filter_val = input$mod7_filter_val_diff,
+                               covar_col_select = input$mod7_covar_col_select_diff,
+                               covar_row_select = input$mod7_covar_row_select_diff,
+                               analysis_type = input$mod7_analysis_type_diff,
+                               mult_test_method = input$mod7_mult_test_method_diff,
+                               alpha = input$mod7_sig_threshold_diff,
+                               group_col_barplot = input$group_col_barplot_mod7_diff)
+    }, error = function(e) {
+      # Handle the error here
+      # You can show a notification or error message to the user
+      showNotification(e$message, type = "error")
+      # You can also print the error message to the console for debugging purposes
+      print(paste("Error in D_differ_tab_diff:", e))
+      # Return an appropriate value in case of an error, for example:
+      # return(data.frame()) # Return an empty data frame
+      return(NULL) # Return NULL
+    })
   })
   
   
@@ -2915,20 +3025,29 @@ server <- function(input, output,session) {
   
   # Correlation analysis D
   D_differ_tab_corr <- reactive({
-    
-    # Differential analysis D
-    D <- D_for_analysis()  %>%
-      mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
-      diff_analysis_func_tab(var=input$outcome_mod7_corr,
-                             binary=input$mod7_outcome_binary_corr,
-                             analysis_type=input$mod7_analysis_type_corr,
-                             mult_test_method=input$mod7_mult_test_method_corr,
-                             alpha=input$mod7_sig_threshold_corr,
-                             group_col_barplot = input$group_col_barplot_mod7_corr) %>%
-      {.}
-    ## return D
-    D
+    tryCatch({
+      # Differential analysis D
+      D_for_analysis()  %>%
+        mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
+        diff_analysis_func_tab(var = input$outcome_mod7_corr,
+                               binary = input$mod7_outcome_binary_corr,
+                               analysis_type = input$mod7_analysis_type_corr,
+                               mult_test_method = input$mod7_mult_test_method_corr,
+                               alpha = input$mod7_sig_threshold_corr,
+                               group_col_barplot = input$group_col_barplot_mod7_corr) %>%
+        {.}
+    }, error = function(e) {
+      # Handle the error here
+      # You can show a notification or error message to the user
+      showNotification(e$message, type = "error")
+      # You can also print the error message to the console for debugging purposes
+      print(paste("Error in D_differ_tab_corr:", e))
+      # Return an appropriate value in case of an error, for example:
+      # return(data.frame()) # Return an empty data frame
+      return(NULL) # Return NULL
+    })
   })
+  
   
   # Pathway analysis D
   # D_differ_tab_path <- reactive({
@@ -2947,17 +3066,24 @@ server <- function(input, output,session) {
   
   # Partial Correlation Network D
   D_differ_partial_corr <- reactive({
+    result <- tryCatch({
+      D <- D_for_analysis() %>%
+        mt_reporting_heading(heading = "Partial Correlation Network", lvl = 2) %>%
+        mt_stats_cormat_genenet(stat_name = input$stat_name_mod7) %>%
+        mt_post_multtest(stat_name = input$stat_name_mod7, method = "BH") %>%
+        {.}
+      ## return D
+      D
+    }, error = function(e) {
+      # Handle the error here
+      showNotification(e$message, type = "error")
+      message(paste("Error in D_differ_partial_corr:", conditionMessage(e))) # Print error message to console
+      return(NULL) # Return NULL
+    })
     
-    
-    D <- D_for_analysis()  %>%
-      mt_reporting_heading(heading = "Partial Correlation Network", lvl = 2) %>%
-      mt_stats_cormat_genenet_new(stat_name = input$stat_name_mod7) %>%
-      #mt_plots_net(stat_name = input$stat_name_mod7) %>%
-      mt_post_multtest(stat_name = input$stat_name_mod7, method = "BH") %>%
-      {.}
-    ## return D
-    D
+    return(result)
   })
+  
   
   
   #Pathway enrichment D
@@ -2970,43 +3096,30 @@ server <- function(input, output,session) {
                                 pwdb_name = "KEGG",
                                 db_dir = system.file("extdata", "precalc/hmdb", package = "maplet")) %>%
       mt_anno_pathways_remove_redundant(feat_col = "HMDb", pw_col = "kegg_db") %>%
-      #mt_pre_filter_missingness(feat_max=0.2) %>%
-      #mt_pre_filter_missingness(samp_max=0.1) %>%
-      # batch correction by variable BATCH_MOCK
-      #mt_pre_batch_median(batch_col = "BATCH") %>%
-      # quotient normalization
-      #mt_pre_norm_quot() %>%
-      # logging
-      #mt_pre_trans_log() %>%
-      # KNN imputation
-      #mt_pre_impute_knn() %>%
-      
-    #D_differ_tab_diff()  %>%
-    #mt_stats_univ_lm(formula = as.formula(sprintf("~  %s",input$outcome_mod7_diff)),
-    #                 stat_name  = "comp",
-    #                 n_cores     = 1) %>%
-    
-    #mt_post_fold_change(stat_name = "comp") %>%
-    # add multiple testing correction
-    #mt_post_multtest(stat_name = "comp", method = "BH") %>%
-    
-    #mt_stats_pathway_enrichment(pw_col = "kegg_db",
-    #                            stat_name = sprintf("~  %s%s Analysis",input$outcome_mod7_diff, replace(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = ""), is.null(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = "")),"")),
-    #                            cutoff = 0.4) %>%
-    {.}
-    ## return D
     D
   })
   
   D_final_enrich <- reactive({
-    D_path_enrich() %>%
-      mt_stats_univ_lm(formula = as.formula(sprintf("~ %s%s",input$outcome_mod7_path_enrich, "")), stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, "")) %>%
-      mt_post_multtest(stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""), method = "BH") %>%
-      mt_post_fold_change(stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, "")) %>%
-      mt_stats_pathway_enrichment(pw_col = "kegg_db",
-                                      stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""),
-                                      cutoff = 0.4)
+    
+    tryCatch({
+      D_path_enrich() %>%
+        mt_stats_univ_lm(formula = as.formula(sprintf("~ %s%s",input$outcome_mod7_path_enrich, "")), stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, "")) %>%
+        mt_post_multtest(stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""), method = "BH") %>%
+        mt_post_fold_change(stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, "")) %>%
+        mt_stats_pathway_enrichment(pw_col = "kegg_db",
+                                        stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""),
+                                        cutoff = 0.4)
+    }, error = function(e) {
+      # Show the error message to the user using showNotification
+      showNotification(
+        e$message,
+        type = "error"
+      )
+      # Return an empty data frame or NULL to avoid other issues in the app
+      NULL
+    })
   })
+  
   
   generate_report <- reactive({
     
@@ -3017,16 +3130,76 @@ server <- function(input, output,session) {
   })
   
   # Provide a link to download the report (Code for downloadHandler)
+  # output$download_link <- downloadHandler(
+  #   filename = function() {
+  #     "Example_Pipeline_Metabolite_Analysis.html"
+  #   },
+  #   content = function(file) {
+  #     # Create a list to hold the SE objects that have been created and are not empty
+  #     valid_D_list <- list()
+  #     
+  #     # Check and include only the valid SE objects in the list
+  #     if (!is.null(D_differ_tab_diff()) && nrow(D_differ_tab_diff()) > 0) {
+  #       valid_D_list$D_differ_tab_diff <- D_differ_tab_diff()
+  #     }
+  #     
+  #     if (!is.null(D_differ_tab_corr()) && nrow(D_differ_tab_corr()) > 0) {
+  #       valid_D_list$D_differ_tab_corr <- D_differ_tab_corr()
+  #     }
+  #     
+  #     if (!is.null(D_final_enrich()) && nrow(D_final_enrich()) > 0) {
+  #       valid_D_list$D_final_enrich <- D_final_enrich()
+  #     }
+  #     
+  #     # Check if the valid_D_list is not empty before generating the report
+  #     if (length(valid_D_list) > 0) {
+  #       # Generate the HTML content using mt_reporting_html_nonlinear
+  #       html_content <- mt_reporting_html_nonlinear(D_list = valid_D_list, title = "Example Pipeline - Statistical Analysis")
+  #       
+  #       # Write the HTML content to the file
+  #       cat(html_content, file = file)
+  #     } else {
+  #       # If valid_D_list is empty, show an error message to the user
+  #       showNotification("No valid data found for generating the report.", type = "error")
+  #     }
+  #   }
+  # )
+  
+  
   output$download_link <- downloadHandler(
     filename = function() {
       "Example_Pipeline_Metabolite_Analysis.html"
     },
     content = function(file) {
+      
+      D_diff <- D_differ_tab_diff()
+      D_corr <- D_differ_tab_corr()
+      D_partial_corr <- D_differ_partial_corr()
+      
+      print(class(D_diff))
+      print(class(D_corr))
+      print(class(D_partial_corr))
+      
       # Call mt_reporting_html and save the report with the specified filename
-      mt_reporting_html(D_differ_tab_diff(), file = file, title = "Example Pipeline - Statistical Analysis")
+      mt_reporting_html_nonlinear(D_list = list(D_diff, D_corr, D_partial_corr), file = file, 
+                            title = "Example Pipeline - Statistical Analysis")
       # Note: Replace D with your actual SummarizedExperiment object.
+      
     }
   )
+  
+  
+  
+  # output$download_link <- downloadHandler(
+  #   filename = function() {
+  #     "Example_Pipeline_Metabolite_Analysis.html"
+  #   },
+  #   content = function(file) {
+  #     # Call mt_reporting_html and save the report with the specified filename
+  #     mt_reporting_html_nonlinear(D_list = list(D_differ_tab_diff(),D_differ_tab_corr(),D_final_enrich()), file = file, title = "Example Pipeline - Statistical Analysis")
+  #     # Note: Replace D with your actual SummarizedExperiment object.
+  #   }
+  # ) 
   
   
   
