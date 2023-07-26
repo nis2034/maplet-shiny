@@ -1014,7 +1014,7 @@ mt_stats_pathway_enrichment_new <- function(D, stat_name, pw_col, cutoff = 0.05)
   if(!"pathways" %in% names(meta_D)) stop("'pathways' does not exist in current SummarizedExperiment input")
   
   # Check if given pathway column actually exists
-  if (!pw_col %in% names(meta_D$pathways)) stop(sprintf("'%s' not found in metabolite annotations.", pw))
+  if (!pw_col %in% names(meta_D$pathways)) stop(sprintf("'%s' not found in metabolite annotations.", pw_col))
   
   # have a check for wheter stat_name exists in D?
   
@@ -2351,39 +2351,11 @@ mt_reporting_html_new <- function(D,
                               start_after=NA,
                               use_plotly=F,
                               keep_tmp=F,
-                              include_plots = TRUE,  # New parameter to control plot inclusion
-                              mod5_plot_scatter = NULL,  # New parameter for mod5 scatter plot
-                              mod5_plot_boxplot = NULL,  # New parameter for mod5 boxplot
-                              mod5_plot_barplot = NULL
+                              enrichment_results
 ) {
   
   # validate argument
   stopifnot("SummarizedExperiment" %in% class(D))
-  
-  # Include the mod5 plots if include_plots is set to TRUE
-  if (include_plots) {
-    # Add the mod5 scatter plot
-    if (!is.null(mod5_plot_scatter)) {
-      cat("<b>Mod5 Scatter Plot</b>")  # Optional heading for the plot
-      cat(mod5_plot_scatter)
-      cat("")  # Empty line as spacer
-    }
-    
-    # Add the mod5 boxplot
-    if (!is.null(mod5_plot_boxplot)) {
-      cat("<b>Mod5 Boxplot</b>")  # Optional heading for the plot
-      cat(mod5_plot_boxplot)
-      cat("")  # Empty line as spacer
-    }
-    
-    # Add the mod5 barplot
-    if (!is.null(mod5_plot_barplot)) {
-      out("<b>Mod5 Barplot</b>")  # Optional heading for the plot
-      out(mod5_plot_barplot)
-      out("")  # Empty line as spacer
-    }
-  }
-  
   
   # unique string
   ustr <- uuid::UUIDgenerate()
@@ -2402,7 +2374,8 @@ mt_reporting_html_new <- function(D,
     start.after=start_after,
     use.plotly = use_plotly,
     keep_tmp = keep_tmp,
-    outfile = file)
+    outfile = file,
+    enrcichment_results = enrichment_results)
   
   # save temp file that will be input for the RMD?
   if (keep_tmp){
@@ -2467,7 +2440,8 @@ reporting_generateMD <- function(
     number.sections=F,
     start.after=NA,
     keep_tmp=F,
-    outfile
+    outfile,
+    enrichment_results
 ) {
   
   
@@ -2496,9 +2470,12 @@ output:
     {if(number.sections){"number_sections: true"}else{""}}
 params:
   D: NA
+  enrichment_results: NA
 ---
 
     '))
+  
+  
   
   #### determine where to start from (first pipeline step, or after one)
   start.from = 1 # by default
@@ -2691,6 +2668,15 @@ DT::datatable(df, rownames = FALSE, filter = "top", options = list(pageLength = 
         }
       }
     }
+  }
+  
+  # Render the enrichment_results table (added here outside the loop)
+  if (!is.null(enrichment_results)) {
+    df_enrichment_results <- as.data.frame(enrichment_results)
+    out(glue::glue("```{{r output_enrichment_results, results='asis'}}
+# Render the enrichment_results table
+DT::datatable(df_enrichment_results, rownames = FALSE)
+```"))
   }
   
   # clean up

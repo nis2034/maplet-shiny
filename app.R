@@ -647,6 +647,8 @@ ui <- fluidPage(
                          actionButton("mod7_go_path_enrich", "Run", width = "110px")
                      ),
                      tags$hr(),
+                     tags$p(HTML("Downloading the report may cost a few minutes to run.")),
+                     
                      downloadLink("download_link", "Download Report")
                      
                    ),
@@ -2567,14 +2569,14 @@ server <- function(input, output,session) {
   })
   
   # Define rendering logic of outputs in Module-Differential Expression Analysis(coded as mod7) ------------------------------
-    D_download <- reactiveVal()
+   
   
     observeEvent(input$mod7_go_diff,{
 
       tryCatch({
 
         print("done")
-        D_download(D_differ_tab_diff())
+        
         print(class(D_differ_tab_diff()))
         
   
@@ -2667,6 +2669,8 @@ server <- function(input, output,session) {
         output$interactive_plot3 <- renderPlotly({
           interactive_plot3
         })
+        
+      
     }, error = function(e) {
       # Handle the error here
       # You can show a notification or error message to the user
@@ -2684,7 +2688,7 @@ server <- function(input, output,session) {
     
       print("done")
       print(class(D_differ_tab_corr()))
-      D_download(D_differ_tab_corr())
+      
       
       #covar_col_select <- input$mod7_covar_col_select_diff
       #covar_row_select <- input$mod7_covar_row_select_diff
@@ -2754,6 +2758,9 @@ server <- function(input, output,session) {
       output$interactive_plot3 <- plotly::renderPlotly({
         interactive_plot3
       })
+      
+      
+      
     }, error = function(e) {
       # Handle the error here
       # You can show a notification or error message to the user
@@ -2765,60 +2772,6 @@ server <- function(input, output,session) {
     
   })
   
-  
-  #actions for correlation analysis:
-  # observeEvent(input$mod7_go_corr,{
-  #   
-  #   
-  #   pdiffer_list$value <- get_plots_SE_differ(D_differ_tab_corr())
-  #   pdiffer_list$length <-  pdiffer_list$value %>% length()
-  #   
-  #   output$mod7_main_panel  <- renderUI({
-  #     
-  #     mod7_output_plotlist <-   lapply(1: pdiffer_list$length, function(i){
-  #       local({
-  #         len_j <- length(pdiffer_list$value[[i]])
-  #         lapply(1:(len_j), function(j) {
-  #           
-  #           plotname <- paste("Plot_differ", i,j, sep="")
-  #           
-  #           plotOutput(plotname)
-  #           
-  #         })
-  #       })
-  #       
-  #       
-  #     })
-  #     
-  #     do.call(tagList, mod7_output_plotlist)
-  #     
-  #     
-  #   })
-  #   
-  #   lapply(1: pdiffer_list$length, function(i){
-  #     local({
-  #       
-  #       len_j <- length(pdiffer_list$value[[i]])
-  #       
-  #       lapply(1:(len_j), function(j) {
-  #         
-  #         plotname <- paste("Plot_differ", i,j, sep="")
-  #         
-  #         output[[plotname]] <-
-  #           renderPlot({
-  #             #grid.force()
-  #             pdiffer_list$value[[i]][j]
-  #             
-  #             #print(pdiffer_list$value[[i]][j])
-  #             
-  #           })
-  #       })
-  #     })
-  #     
-  #   })
-  #   
-  #   
-  # })
   
   
   
@@ -2832,7 +2785,7 @@ server <- function(input, output,session) {
     # Wrap the code in tryCatch to handle errors gracefully
     tryCatch({
     
-      # Get the pathway enrichment results
+      
       output_table <- mt_stats_cormat_genenet_new(D_for_analysis(),
                                                   stat_name = input$stat_name_mod7)
       # Display the table
@@ -2848,56 +2801,7 @@ server <- function(input, output,session) {
         type = "error"
       )
     })
-    
-    
-    # pdiffer_list$value <- get_plots_SE_differ(D_differ_partial_corr())
-    # print(pdiffer_list$value)
-    # pdiffer_list$length <-  pdiffer_list$value %>% length()
-    # 
-    # output$mod7_main_panel  <- renderUI({
-    #   
-    #   mod7_output_plotlist <-   lapply(1: pdiffer_list$length, function(i){
-    #     local({
-    #       len_j <- length(pdiffer_list$value[[i]])
-    #       lapply(1:(len_j), function(j) {
-    #         
-    #         plotname <- paste("Plot_differ", i,j, sep="")
-    #         
-    #         plotOutput(plotname)
-    #         
-    #       })
-    #     })
-    #     
-    #     
-    #   })
-    #   
-    #   do.call(tagList, mod7_output_plotlist)
-    #   
-    #   
-    # })
-    # 
-    # lapply(1: pdiffer_list$length, function(i){
-    #   local({
-    #     
-    #     len_j <- length(pdiffer_list$value[[i]])
-    #     
-    #     lapply(1:(len_j), function(j) {
-    #       
-    #       plotname <- paste("Plot_differ", i,j, sep="")
-    #       
-    #       output[[plotname]] <-
-    #         renderPlot({
-    #           #grid.force()
-    #           pdiffer_list$value[[i]][j]
-    #           
-    #           #print(pdiffer_list$value[[i]][j])
-    #           
-    #         })
-    #     })
-    #   })
-    #   
-    # })
-    
+   
   })
   
   
@@ -2905,7 +2809,7 @@ server <- function(input, output,session) {
   observeEvent(input$mod7_go_path_enrich, {
     tryCatch({
       # Get the pathway enrichment results
-      D_download(D_final_enrich())
+      #D_download(D_final_enrich())
       print(D_final_enrich())
       enrichment_results <- metadata(D_final_enrich())$pathways$enrichment_results
       
@@ -2914,6 +2818,7 @@ server <- function(input, output,session) {
       output$mod7_main_panel_2 <- renderDT({
         datatable(enrichment_results)
       })
+      
     }, error = function(e) {
       # Show the error message to the user using showNotification
       showNotification(
@@ -2921,78 +2826,10 @@ server <- function(input, output,session) {
         type = "error"
       )
     })
-    
-    
-    #want barplot for D_final_enrich
-    # Generate the stat_list based on input values
-    #covar_col_select <- input$mod7_covar_col_select_diff
-    #covar_row_select <- input$mod7_covar_row_select_diff
-    var <- input$outcome_mod7_path_enrich
-    #if(is.null(covar_col_select) && is.null(covar_row_select))
-    #{
-    #  covar = NULL
-    #} else
-    #{
-    #  covar <- paste("+", paste(c(covar_row_select,covar_col_select), collapse = "+"), sep = "")
-    #}
-    
-    
-    # p1 <- mt_plots_stats_pathway_bar_new(
-    #   D_final_enrich(),
-    #   stat_list = stat_list,
-    #   feat_filter = p.value < 1,
-    #   group_col = input$in_col_mod7
-    # )
-    # result <- get_stat_names(D_final_enrich)
-    # 
-    # # Print the result
-    # print(result)
-    # 
-    # 
-    # 
-    # 
-    # p1 <- mt_plots_stats_pathway_bar_new(D_final_enrich(),
-    #                                      stat_list = stat_list, #sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""),
-    #                                      feat_filter = p.adj < input$mod7_sig_threshold_diff)
-    # 
-    # 
-    # 
-    # 
-    # 
-    # interactive_plot1 <- plotly::style(interactive_plot1, tooltip = input$mod5_select_hover)
-    # interactive_plot1 <- plotly::event_register(interactive_plot1, "plotly_hover")
-    # 
-    # output$mod7_main_panel_1 <- renderUI({
-    #   plotly::plotlyOutput("interactive_plot1")
-    # })
-    # 
-    # output$interactive_plot1 <- plotly::renderPlotly({
-    #   interactive_plot1
-    # })
+
   })
   
-  
-  # Differential analysis D
-  # D_differ_tab_diff <- reactive({
-  #   
-  #   
-  #   D <- D_for_analysis()  %>%
-  #     mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
-  #     diff_analysis_func_tab(var=input$outcome_mod7_diff,
-  #                            binary=input$mod7_outcome_binary_diff,
-  #                            sample_filter = samp_filter_diff(),
-  #                            filter_val = input$mod7_filter_val_diff,
-  #                            covar_col_select = input$mod7_covar_col_select_diff,
-  #                            covar_row_select = input$mod7_covar_row_select_diff,
-  #                            analysis_type=input$mod7_analysis_type_diff,
-  #                            mult_test_method=input$mod7_mult_test_method_diff,
-  #                            alpha=input$mod7_sig_threshold_diff,
-  #                            group_col_barplot = input$group_col_barplot_mod7_diff) %>%
-  #     {.}
-  #   ## return D
-  #   D
-  # }) 
-  
+
   #SE object withSpinner:
   D_differ_tab_diff <- reactive({
     tryCatch({
@@ -3047,23 +2884,8 @@ server <- function(input, output,session) {
       return(NULL) # Return NULL
     })
   })
-  
-  
-  # Pathway analysis D
-  # D_differ_tab_path <- reactive({
-  #   
-  #   
-  #   D <- D_for_analysis()  %>%
-  #     mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
-  #     diff_analysis_func_tab(var=input$outcome_mod7_path,
-  #                            alpha=input$mod7_sig_threshold_path,
-  #                            group_col_barplot=input$group_col_barplot_mod7_path,
-  #                            color_col_barplot = input$color_col_barplot_mod7) %>%
-  #     {.}
-  #   ## return D
-  #   D
-  # })
-  
+
+
   # Partial Correlation Network D
   D_differ_partial_corr <- reactive({
     result <- tryCatch({
@@ -3096,40 +2918,77 @@ server <- function(input, output,session) {
                                 pwdb_name = "KEGG",
                                 db_dir = system.file("extdata", "precalc/hmdb", package = "maplet")) %>%
       mt_anno_pathways_remove_redundant(feat_col = "HMDb", pw_col = "kegg_db") %>%
+      #mt_pre_filter_missingness(feat_max=0.2) %>%
+      #mt_pre_filter_missingness(samp_max=0.1) %>%
+      # batch correction by variable BATCH_MOCK
+      #mt_pre_batch_median(batch_col = "BATCH") %>%
+      # quotient normalization
+      #mt_pre_norm_quot() %>%
+      # logging
+      #mt_pre_trans_log() %>%
+      # KNN imputation
+      #mt_pre_impute_knn() %>%
+      
+    #D_differ_tab_diff()  %>%
+    #mt_stats_univ_lm(formula = as.formula(sprintf("~  %s",input$outcome_mod7_diff)),
+    #                 stat_name  = "comp",
+    #                 n_cores     = 1) %>%
+    
+    #mt_post_fold_change(stat_name = "comp") %>%
+    # add multiple testing correction
+    #mt_post_multtest(stat_name = "comp", method = "BH") %>%
+    
+    #mt_stats_pathway_enrichment(pw_col = "kegg_db",
+    #                            stat_name = sprintf("~  %s%s Analysis",input$outcome_mod7_diff, replace(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = ""), is.null(paste("+", paste(c(input$mod7_covar_row_select_diff,input$mod7_covar_col_select_diff), collapse = "+"), sep = "")),"")),
+    #                            cutoff = 0.4) %>%
+    {.}
+    ## return D
     D
   })
   
   D_final_enrich <- reactive({
-    
-    tryCatch({
-      D_path_enrich() %>%
-        mt_stats_univ_lm(formula = as.formula(sprintf("~ %s%s",input$outcome_mod7_path_enrich, "")), stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, "")) %>%
-        mt_post_multtest(stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""), method = "BH") %>%
-        mt_post_fold_change(stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, "")) %>%
-        mt_stats_pathway_enrichment(pw_col = "kegg_db",
-                                        stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""),
-                                        cutoff = 0.4)
-    }, error = function(e) {
-      # Show the error message to the user using showNotification
-      showNotification(
-        e$message,
-        type = "error"
-      )
-      # Return an empty data frame or NULL to avoid other issues in the app
-      NULL
-    })
+    D_path_enrich() %>%
+      mt_stats_univ_lm(formula = as.formula(sprintf("~ %s%s",input$outcome_mod7_path_enrich, "")), stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, "")) %>%
+      mt_post_multtest(stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""), method = "BH") %>%
+      mt_post_fold_change(stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, "")) %>%
+      mt_stats_pathway_enrichment(pw_col = "kegg_db",
+                                  stat_name = sprintf("~  %s%s",input$outcome_mod7_path_enrich, ""),
+                                  cutoff = 0.4)
   })
   
   
-  generate_report <- reactive({
+  D_report <- reactive({
+    D_for_analysis() %>% 
+      mt_reporting_heading(heading = "Differential Analysis", lvl = 1) %>%
+      diff_analysis_func_tab(var = input$outcome_mod7_diff,
+                             binary = input$mod7_outcome_binary_diff,
+                             sample_filter = samp_filter_diff(),
+                             filter_val = input$mod7_filter_val_diff,
+                             covar_col_select = input$mod7_covar_col_select_diff,
+                             covar_row_select = input$mod7_covar_row_select_diff,
+                             analysis_type = input$mod7_analysis_type_diff,
+                             mult_test_method = input$mod7_mult_test_method_diff,
+                             alpha = input$mod7_sig_threshold_diff,
+                             group_col_barplot = input$group_col_barplot_mod7_diff) %>%
+      mt_reporting_heading(heading = "Statistical Analysis", lvl = 1) %>%
+      diff_analysis_func_tab(var = input$outcome_mod7_corr,
+                             binary = input$mod7_outcome_binary_corr,
+                             analysis_type = input$mod7_analysis_type_corr,
+                             mult_test_method = input$mod7_mult_test_method_corr,
+                             alpha = input$mod7_sig_threshold_corr,
+                             group_col_barplot = input$group_col_barplot_mod7_corr) %>%
+      mt_reporting_heading(heading = "Partial Correlation Network", lvl = 2) %>%
+      mt_stats_cormat_genenet(stat_name = input$stat_name_mod7) %>%
+      mt_post_multtest(stat_name = input$stat_name_mod7, method = "BH") %>%
+      mt_reporting_heading(heading = "Pathway Enrichment", lvl = 2) %>%
+      
+
+      {.}
     
-    D_differ_tab_diff() %>% mt_reporting_html(file = "Example_Pipeline_Metabolite_Analysis.html",
-                                              title = "Example Pipeline - Statistical Analysis")
-    
-    return("Report generation successful!")
   })
   
-  # Provide a link to download the report (Code for downloadHandler)
+  
+  #Provide a link to download the report (Code for downloadHandler)
   # output$download_link <- downloadHandler(
   #   filename = function() {
   #     "Example_Pipeline_Metabolite_Analysis.html"
@@ -3137,25 +2996,25 @@ server <- function(input, output,session) {
   #   content = function(file) {
   #     # Create a list to hold the SE objects that have been created and are not empty
   #     valid_D_list <- list()
-  #     
+  # 
   #     # Check and include only the valid SE objects in the list
   #     if (!is.null(D_differ_tab_diff()) && nrow(D_differ_tab_diff()) > 0) {
   #       valid_D_list$D_differ_tab_diff <- D_differ_tab_diff()
   #     }
-  #     
+  # 
   #     if (!is.null(D_differ_tab_corr()) && nrow(D_differ_tab_corr()) > 0) {
   #       valid_D_list$D_differ_tab_corr <- D_differ_tab_corr()
   #     }
-  #     
+  # 
   #     if (!is.null(D_final_enrich()) && nrow(D_final_enrich()) > 0) {
   #       valid_D_list$D_final_enrich <- D_final_enrich()
   #     }
-  #     
+  # 
   #     # Check if the valid_D_list is not empty before generating the report
   #     if (length(valid_D_list) > 0) {
   #       # Generate the HTML content using mt_reporting_html_nonlinear
-  #       html_content <- mt_reporting_html_nonlinear(D_list = valid_D_list, title = "Example Pipeline - Statistical Analysis")
-  #       
+  #       mt_reporting_html_nonlinear(D_list = valid_D_list, title = "Example Pipeline - Statistical Analysis", file="Maplet_Output.html")
+  # 
   #       # Write the HTML content to the file
   #       cat(html_content, file = file)
   #     } else {
@@ -3164,6 +3023,10 @@ server <- function(input, output,session) {
   #     }
   #   }
   # )
+
+  
+  
+  
   
   
   output$download_link <- downloadHandler(
@@ -3171,35 +3034,14 @@ server <- function(input, output,session) {
       "Example_Pipeline_Metabolite_Analysis.html"
     },
     content = function(file) {
-      
-      D_diff <- D_differ_tab_diff()
-      D_corr <- D_differ_tab_corr()
-      D_partial_corr <- D_differ_partial_corr()
-      
-      print(class(D_diff))
-      print(class(D_corr))
-      print(class(D_partial_corr))
-      
       # Call mt_reporting_html and save the report with the specified filename
-      mt_reporting_html_nonlinear(D_list = list(D_diff, D_corr, D_partial_corr), file = file, 
-                            title = "Example Pipeline - Statistical Analysis")
+      #D_merged <- mt_load_merge_se(D1 = D_differ_tab_diff(), id_col1="sample", D2=D_differ_tab_corr(), id_col2="sample",crash_on_duplicate = F)
+      mt_reporting_html_new(D_report(), file = file, 
+                            title = "Example Pipeline - Statistical Analysis",
+                            enrichment_results = metadata(D_final_enrich())$pathways$enrichment_results)
       # Note: Replace D with your actual SummarizedExperiment object.
-      
     }
   )
-  
-  
-  
-  # output$download_link <- downloadHandler(
-  #   filename = function() {
-  #     "Example_Pipeline_Metabolite_Analysis.html"
-  #   },
-  #   content = function(file) {
-  #     # Call mt_reporting_html and save the report with the specified filename
-  #     mt_reporting_html_nonlinear(D_list = list(D_differ_tab_diff(),D_differ_tab_corr(),D_final_enrich()), file = file, title = "Example Pipeline - Statistical Analysis")
-  #     # Note: Replace D with your actual SummarizedExperiment object.
-  #   }
-  # ) 
   
   
   

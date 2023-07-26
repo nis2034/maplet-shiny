@@ -1,0 +1,10 @@
+name: maplet-shiny
+title: maplet-shiny
+username: clindatatest
+account: clindatatest
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 9510046
+bundleId: 7497600
+url: https://clindatatest.shinyapps.io/maplet-shiny/
+version: 1
