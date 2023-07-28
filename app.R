@@ -2055,6 +2055,7 @@ server <- function(input, output,session) {
   })
 })  
   
+  mod5_plotly_url <- reactiveVal()
  
   
   # download button
@@ -2065,6 +2066,15 @@ server <- function(input, output,session) {
     content = function(file) {
       tryCatch({
         saveWidget(as_widget(session_store$mod5_plotly), file, selfcontained = TRUE)
+        
+        #htmltools::html_print(as_widget(session_store$mod5_plotly))
+        
+        # Generate the iframe HTML code for the Plotly plot (optional, depending on how you want to display the plot in the R Markdown report)
+        mod5_plotly_html_code <- sprintf("<iframe src='%s' height='600px' width='1000px'></iframe>", file)
+        
+        # Update mod5_plotly_html with the generated HTML code (optional, depending on how you want to display the plot in the R Markdown report)
+        mod5_plotly_url(mod5_plotly_html_code)
+        
       }, error = function(e) {
         # Handle the error here
         # You can show a notification or error message to the user
@@ -3038,8 +3048,12 @@ server <- function(input, output,session) {
       #D_merged <- mt_load_merge_se(D1 = D_differ_tab_diff(), id_col1="sample", D2=D_differ_tab_corr(), id_col2="sample",crash_on_duplicate = F)
       mt_reporting_html_new(D_report(), file = file, 
                             title = "Example Pipeline - Statistical Analysis",
-                            enrichment_results = metadata(D_final_enrich())$pathways$enrichment_results)
-      # Note: Replace D with your actual SummarizedExperiment object.
+                            enrichment_results = metadata(D_final_enrich())$pathways$enrichment_results,
+                            mod5_plotly_html = mod5_plotly_url())
+      
+      
+      
+      
     }
   )
   

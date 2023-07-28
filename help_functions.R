@@ -2351,7 +2351,8 @@ mt_reporting_html_new <- function(D,
                               start_after=NA,
                               use_plotly=F,
                               keep_tmp=F,
-                              enrichment_results
+                              enrichment_results,
+                              mod5_plotly_html
 ) {
   
   # validate argument
@@ -2375,7 +2376,8 @@ mt_reporting_html_new <- function(D,
     use.plotly = use_plotly,
     keep_tmp = keep_tmp,
     outfile = file,
-    enrcichment_results = enrichment_results)
+    enrichment_results = enrichment_results,
+    mod5_plotly_html = mod5_plotly_html)
   
   # save temp file that will be input for the RMD?
   if (keep_tmp){
@@ -2441,7 +2443,8 @@ reporting_generateMD <- function(
     start.after=NA,
     keep_tmp=F,
     outfile,
-    enrichment_results
+    enrichment_results,
+    mod5_plotly_html
 ) {
   
   
@@ -2675,9 +2678,14 @@ DT::datatable(df, rownames = FALSE, filter = "top", options = list(pageLength = 
     df_enrichment_results <- as.data.frame(enrichment_results)
     out(glue::glue("```{{r output_enrichment_results, results='asis'}}
 # Render the enrichment_results table
-DT::datatable(df_enrichment_results, rownames = FALSE)
+DT::datatable(enrichment_results, rownames = FALSE)
 ```"))
   }
+  
+  # Add the Plotly plot using an iframe
+  out(glue::glue("```{{=html}}
+{mod5_plotly_html}
+```"))
   
   # clean up
   close(h)
