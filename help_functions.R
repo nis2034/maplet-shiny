@@ -2352,7 +2352,8 @@ mt_reporting_html_new <- function(D,
                               use_plotly=F,
                               keep_tmp=F,
                               enrichment_results,
-                              mod5_plotly_html
+                              plotly_file_path,
+                              mod3_file_path
 ) {
   
   # validate argument
@@ -2377,7 +2378,8 @@ mt_reporting_html_new <- function(D,
     keep_tmp = keep_tmp,
     outfile = file,
     enrichment_results = enrichment_results,
-    mod5_plotly_html = mod5_plotly_html)
+    plotly_file_path = plotly_file_path,
+    mod3_file_path = mod3_file_path)
   
   # save temp file that will be input for the RMD?
   if (keep_tmp){
@@ -2444,7 +2446,8 @@ reporting_generateMD <- function(
     keep_tmp=F,
     outfile,
     enrichment_results,
-    mod5_plotly_html
+    plotly_file_path,
+    mod3_file_path
 ) {
   
   
@@ -2682,10 +2685,20 @@ DT::datatable(enrichment_results, rownames = FALSE)
 ```"))
   }
   
-  # Add the Plotly plot using an iframe
+  # Add the Plotly plot using an iframe with the file path of the downloaded plot
   out(glue::glue("```{{=html}}
-{mod5_plotly_html}
+<iframe src='{plotly_file_path}' height='600px' width='1000px'></iframe>
 ```"))
+
+
+  out(glue::glue("```{{=html}}
+<iframe src='{mod3_file_path}' height='600px' width='1000px'></iframe>
+```"))
+
+#   out(glue::glue("```{{=html}}
+# {plotly_file_path()}
+# {mod3_file_path()}
+# ```"))
   
   # clean up
   close(h)

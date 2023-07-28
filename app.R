@@ -503,7 +503,7 @@ ui <- fluidPage(
                          br(), 
                          style = "overflow-y: auto; position: absolute; left: 25%",
                          # plotly
-                         downloadButton("mod3_download_plotly", "download plotly"),
+                         downloadButton("mod3_download_plotly", "Include plot in report"),
                          plotlyOutput('mod3_plot', height = 700)
                )
              )
@@ -1967,12 +1967,12 @@ server <- function(input, output,session) {
   
   output$mod5_output_ui <- renderUI({
     switch(input$mod5_dimension,
-           "col"=list(downloadButton("mod5_download_plotly", "download plotly"),
+           "col"=list(downloadButton("mod5_download_plotly", "Include plot in report"),
                       plotlyOutput('mod5_plot', height = 600)),
            "row"=list(fluidRow(
              splitLayout(style = "border: 1px", cellWidths = c(1000, 1000), 
-                         downloadButton("mod5_download_plotly", "download plotly"), 
-                         downloadButton("mod5_download_plotly2", "download plotly")
+                         downloadButton("mod5_download_plotly", "Include plot in report"), 
+                         downloadButton("mod5_download_plotly2", "Include plot in report")
              )
            ),
            fluidRow(
@@ -2065,15 +2065,14 @@ server <- function(input, output,session) {
     },
     content = function(file) {
       tryCatch({
-        saveWidget(as_widget(session_store$mod5_plotly), file, selfcontained = TRUE)
         
-        #htmltools::html_print(as_widget(session_store$mod5_plotly))
+        # Save the Plotly plot to a temporary file
+        output_file <- basename(file)
+        saveWidget(as_widget(session_store$mod5_plotly), output_file, selfcontained = TRUE)
         
-        # Generate the iframe HTML code for the Plotly plot (optional, depending on how you want to display the plot in the R Markdown report)
-        mod5_plotly_html_code <- sprintf("<iframe src='%s' height='600px' width='1000px'></iframe>", file)
         
-        # Update mod5_plotly_html with the generated HTML code (optional, depending on how you want to display the plot in the R Markdown report)
-        mod5_plotly_url(mod5_plotly_html_code)
+        # Update mod5_plotly_url with the generated URL
+        mod5_plotly_url(output_file)
         
       }, error = function(e) {
         # Handle the error here
@@ -2340,6 +2339,7 @@ server <- function(input, output,session) {
     })
   })
   
+  mod3_plotly_url <- reactiveVal()
   
   # download button
   output$mod3_download_plotly <- downloadHandler(
@@ -2348,7 +2348,13 @@ server <- function(input, output,session) {
     },
     content = function(file) {
       tryCatch({
-        saveWidget(as_widget(session_store$mod3_plotly), file, selfcontained = TRUE)
+        
+        new_file <- basename(file)
+        saveWidget(as_widget(session_store$mod3_plotly), new_file, selfcontained = TRUE)
+        
+        
+        # Update mod3_plotly_url with the generated URL
+        mod3_plotly_url(new_file)
       }, error = function(e) {
         # Handle the error here
         # You can show a notification or error message to the user
@@ -3049,7 +3055,8 @@ server <- function(input, output,session) {
       mt_reporting_html_new(D_report(), file = file, 
                             title = "Example Pipeline - Statistical Analysis",
                             enrichment_results = metadata(D_final_enrich())$pathways$enrichment_results,
-                            mod5_plotly_html = mod5_plotly_url())
+                            plotly_file_path = mod5_plotly_url(),
+                            mod3_file_path = mod3_plotly_url())
       
       
       
