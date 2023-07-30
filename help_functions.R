@@ -246,34 +246,74 @@ mod3_plots_umap <- function (D, title = "UMAP",
 }
 
 # define PLS output function for mod3 referring 'mt_plots_pls'---------------
-mod3_plots_pls <- function (D, title = "PLS", 
-                            subgroupvar,hover, ...) {
-  
-  
-  
-  
+# mod3_plots_pls <- function (D, title = "PLS",
+#                             subgroupvar,hover, ...) {
+# 
+# 
+# 
+# 
+# 
+#   p <- NULL
+# 
+#   Dplot <- D
+#   # subgroupvar <- "GROUP_ID"
+# 
+# 
+#   pls_D <- autonomics:::pls(Dplot, subgroupvar,color =!!ensym(subgroupvar))
+# 
+#   p <- autonomics:::biplot(pls_D ,pls1, pls2,color =!!ensym(subgroupvar) )
+# 
+#   # draw plotly
+#   ggplotly(p, tooltip = c(subgroupvar, hover)) %>%
+#     layout(legend = list(orientation = "h",   # show entries horizontally
+#                          xanchor = "center",  # use center of legend as anchor
+#                          x = .5,
+#                          y = -.2,
+#                          tracegroupgap = 5),
+#            autosize = TRUE
+#     )
+# 
+# }
+
+
+library(ggplot2)
+library(plotly)
+
+mod3_plots_pls <- function(D, title = "PLS", subgroupvar, hover, ...) {
   
   p <- NULL
-  
   Dplot <- D
-  # subgroupvar <- "GROUP_ID"
   
+  # Perform partial least squares analysis
+  pls_D <- autonomics:::pls(Dplot, subgroupvar)
   
-  pls_D <- autonomics:::pls(Dplot, subgroupvar,color =!!ensym(subgroupvar))
+  print("done")
   
+  if (identical(D, pls_D))
+  {print("no change")}
+  else{
+    print("pls done")
+    print(str(pls_D))
+  }
+  
+  # Extract the scores for the x and y axes from the PLS result
   p <- autonomics:::biplot(pls_D ,pls1, pls2,color =!!ensym(subgroupvar) )
-  
-  # draw plotly
-  ggplotly(p, tooltip = c(subgroupvar, hover)) %>% 
-    layout(legend = list(orientation = "h",   # show entries horizontally
-                         xanchor = "center",  # use center of legend as anchor
-                         x = .5,
-                         y = -.2,
-                         tracegroupgap = 5),
-           autosize = TRUE
-    )
+
+    # draw plotly
+    ggplotly(p, tooltip = c(subgroupvar, hover)) %>%
+      layout(legend = list(orientation = "h",   # show entries horizontally
+                           xanchor = "center",  # use center of legend as anchor
+                           x = .5,
+                           y = -.2,
+                           tracegroupgap = 5),
+             autosize = TRUE
+      )
   
 }
+
+
+
+
 
 
 # define boxplot function in module 5---------------

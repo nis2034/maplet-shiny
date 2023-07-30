@@ -29,7 +29,7 @@ library(graphics)
 library(DT)
 library(shinymaterial)
 library(shinycssloaders)
-
+library(mixOmics)
 
 # refer help functions
 source("help_functions.R")
