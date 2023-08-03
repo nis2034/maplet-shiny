@@ -81,13 +81,26 @@ ui <- fluidPage(
                     style="float:left; margin-top: 5px; padding-right:20px;padding-bottom:5px",
                     height = 60),
                 tags$a("Krumsiek Lab", href="https://github.com/krumsieklab/maplet-shiny", style="color: White"),
+                
                 tags$script(HTML("var header = $('.navbar > .container-fluid');header.append('<div style=\"float:right\"><a href=\"https://weill.cornell.edu\"><img src=\"wcm2.png\" alt=\"logo\" style=\"float:right;height:50px;margin-top: 10px; padding-right:1px; \"> </a></div>');console.log(header)")),
                 windowTitle = "Maplet"),
     # sticky tabs while scrolling main panel
     position = c("fixed-top"), 
     
     # Define layout of Uploading Data(coded as mod0) ----------------------------------------------------
-    
+    tabPanel(HTML(paste("About")),
+             mainPanel(id = "about_panel", 
+                        
+                       style = "overflow-y: auto; position: absolute; left: 25%",
+                       
+
+                       tags$p(HTML("The following people have made significant contributions to the development of maplet:
+                       Kelsey Chetnik, Elisa Benedetti, Daniel P. Gomari, Annalise Schweickart, Richa Batra, Mustafa Buyukozkan, Zeyu Wang, 
+                                          Matthias Arnold, Jonas Zierer, Karsten Suhre, and Jan Krumsiek."))
+                       
+                       
+             )
+            ),
     tabPanel(HTML(paste("Upload", "Data", sep = "<br/>")), 
              sidebarLayout(
                sidebarPanel(id = "mod0_panel1",
@@ -104,20 +117,28 @@ ui <- fluidPage(
                             
                             fileInput("file", "Upload Excel File", accept = c(".xlsx", ".xls")), 
                             # delay the output
-                            actionButton("mod0_go", "Upload Excel File"), br(),
+                            actionButton("mod0_go", "Upload Excel File"),
                             br(),
                             br(),
                             
                             fileInput("se_file", "Upload rds File with an SE object", accept = ".rds"), 
                             # delay the output for R file
-                            actionButton("mod0_go_R", "Upload R file"), 
+                            actionButton("mod0_go_R", "Upload RDS file"), 
                             
                             br(),
                             br(),
                             tags$p(
+                              HTML("For a demo of how the application works with sample data, click the below button."
+                              )),
+                            br(),
+                            actionButton("load_demo", "LOAD DEMO"),
+                            tags$p(
                               HTML("<b>Hint:<br></b>Outputs are delayed untill you click 'Upload' button after selection."
                               )),
-                            br()
+                            br(),
+                            br(),
+                            
+                            
                             
                ), 
                mainPanel(id = "mod0_panel2", 
@@ -140,150 +161,150 @@ ui <- fluidPage(
     
     
     # Define layout of Module-Real-Time Pipeline(coded as mod6) ----------------------------------------------------
-    tabPanel(HTML(paste("Real-Time", "Pipeline", sep = "<br/>")), 
-             # Sidebar layout with input and output definitions ----
-             dashboardPage(
-               dashboardHeader(disable = TRUE),
-               dashboardSidebar(disable = TRUE),
-               dashboardBody(
-                 sidebarLayout(
-                   # Sidebar panel for inputs ----
-                   sidebarPanel(
-                     id = "mod6_panel1",
-                     style = "overflow-y: scroll; max-height: 700px; width: 80%; position:relative; margin-left: -5px; margin-top: 45px; margin-bottom: 5px;",
-                     tags$p(
-                       HTML("<b>Real-Time Pipeline Module</b> starts with original data, creates a pipeline and download it to local."
-                       )),
-                     tags$p(
-                       HTML("Pipeline is constrained to run <b>Data Loading->Preprocessing->Differential Analysis</b> and no section should be skipped."
-                       )),
-                     tags$p(
-                       HTML("The result SE object is dependent on the <b>instant parameters</b>."
-                       )),
-                     
-                     
-                     tags$hr(),
-                     
-                     
-                     
-                     box(solidHeader = T, collapsible = T, collapsed = T,
-                         title="Preprocessing", width = "220px",
-                         tags$p(HTML("Max % missingness per feature (Filter):")),
-                         numericInput("mod6_filter_feat_max", label = NULL,
-                                      value = 50,
-                                      min = 0,
-                                      max = 100,
-                                      step = 5,
-                                      width = "220px"),
-                         tags$p(HTML("Max % missingness per feature (normalization):")),
-                         numericInput("mod6_feat_max_norm", label = NULL,
-                                      value = 50,
-                                      min = 0,
-                                      max = 100,
-                                      step = 5,
-                                      width = "220px"),
-                         tags$p(HTML("Max % missingness per sample:")),
-                         numericInput("mod6_filter_sample_max", label = NULL,
-                                      value = 100,
-                                      min = 0,
-                                      max = 100,
-                                      step = 5,
-                                      width = "220px"),
-                         tags$p(HTML("Sample coloring column:")),
-                         uiOutput("mod6_pre_sample_color_column"),
-                         
-                         tags$p(HTML("Reference sample column:")),
-                         uiOutput("mod6_norm"),
-                         
-                         tags$p(HTML("Reference column value:")),
-                         uiOutput("mod6_norm_value"),
-                         
-                         tags$p(HTML("PCA/UMAP coloring column:")),
-                         uiOutput("mod6_pre_pca_color_column"),
-                         tags$p(HTML("Heatmap annotation column:")),
-                         uiOutput("mod6_pre_heatmap_anno_column"),
-                         tags$p(HTML("Heatmap annotation row:")),
-                         uiOutput("mod6_pre_heatmap_anno_row"),
-                         tags$p(HTML("Run to see log text of data loading and preprocessing. This step may cost a few seconds to run.")),
-                         actionButton("mod6_go_preprocess", "Run", width = "110px"),
-                         
-                         tags$p(HTML("Reference sample column:")),
-                         
-                         
-                         renderUI({selectInput("mod6_reference_samp",
-                                               label = NULL,
-                                               selected = "GROUP_ID",
-                                               choices = names(colData(D())),
-                                               width = "220px")
-                         }),
-                         
-                         tags$p(HTML("Reference column value:")),
-                         renderUI({selectInput("mod6_reference_val", label = NULL,
-                                               choices = colData(D()) %>% as.data.frame() %>%
-                                                 dplyr::select(input$mod2_reference_samp) %>% unique() %>%
-                                                 unlist() %>% as.character(),width = "220px" )
-                         })
-                         
-                         
-                     ),
-                     
-                     tags$hr(),
-                     
-                     box(solidHeader = T, collapsible = T, collapsed = T,
-                         title="Differential Analysis", width = "220px",
-                         tags$p(HTML("Outcome variable:")),
-                         uiOutput("mod6_outcome"),
-                         checkboxInput("mod6_outcome_binary", "Binary outcome?", FALSE),
-                         tags$p(HTML("Type of analysis:")),
-                         selectInput("mod6_analysis_type", label = NULL,
-                                     width = "220px",
-                                     choices = c("lm","pearson","spearman","kendall"),
-                                     selected = "lm"),
-                         tags$p(HTML("Multiple testing correction:")),
-                         selectInput("mod6_mult_test_method", label = NULL,
-                                     width = "220px",
-                                     choices = c("BH","bonferroni","BY"),
-                                     selected = "BH"),
-                         tags$p(HTML("Significance threshold:")),
-                         numericInput("mod6_sig_threshold", label = NULL,
-                                      value = 0.05,
-                                      min = 0,
-                                      max = 1,
-                                      step = 0.01,
-                                      width = "220px"),
-                         tags$p(HTML("Pathway aggregation in barplot:")),
-                         uiOutput("mod6_group_col_barplot"),
-                         tags$p(HTML("Barplot coloring column:")),
-                         uiOutput("mod6_color_col_barplot"),
-                         tags$p(HTML("Run to see log text of data loading, preprocessing and differential analysis. This step may cost a few seconds to run.")),
-                         actionButton("mod6_go_differ", "Run", width = "110px")
-                     )
-                   ),
-                   
-                   # Main panel for displaying outputs ----
-                   mainPanel(
-                     id = "mod6_panel2", 
-                     style = "overflow-y: auto; max-height: 85vh; position: absolute; left: 28%",
-                     br(), 
-                     br(), 
-                     br(), 
-                     # Output: Data file ----
-                     #tags$p(HTML("Downloading SE.Rdata may cost more than one minute. Please wait for the prompt.")),
-                     #downloadButton("download_se", "Download result SE .Rdata"),
-                     br(),
-                     br(),
-                     #uiOutput("mod6_main_panel1"),
-                     # br(),
-                     #br(),
-                     #fluidRow(column(width = 12, uiOutput("mod6_main_panel")))
-                     uiOutput("mod6_main_panel")
-                     
-                   )
-                 )
-               )
-             )
-    ),
-    
+    # tabPanel(HTML(paste("Real-Time", "Pipeline", sep = "<br/>")), 
+    #          # Sidebar layout with input and output definitions ----
+    #          dashboardPage(
+    #            dashboardHeader(disable = TRUE),
+    #            dashboardSidebar(disable = TRUE),
+    #            dashboardBody(
+    #              sidebarLayout(
+    #                # Sidebar panel for inputs ----
+    #                sidebarPanel(
+    #                  id = "mod6_panel1",
+    #                  style = "overflow-y: scroll; max-height: 700px; width: 80%; position:relative; margin-left: -5px; margin-top: 45px; margin-bottom: 5px;",
+    #                  tags$p(
+    #                    HTML("<b>Real-Time Pipeline Module</b> starts with original data, creates a pipeline and download it to local."
+    #                    )),
+    #                  tags$p(
+    #                    HTML("Pipeline is constrained to run <b>Data Loading->Preprocessing->Differential Analysis</b> and no section should be skipped."
+    #                    )),
+    #                  tags$p(
+    #                    HTML("The result SE object is dependent on the <b>instant parameters</b>."
+    #                    )),
+    #                  
+    #                  
+    #                  tags$hr(),
+    #                  
+    #                  
+    #                  
+    #                  box(solidHeader = T, collapsible = T, collapsed = T,
+    #                      title="Preprocessing", width = "220px",
+    #                      tags$p(HTML("Max % missingness per feature (Filter):")),
+    #                      numericInput("mod6_filter_feat_max", label = NULL,
+    #                                   value = 50,
+    #                                   min = 0,
+    #                                   max = 100,
+    #                                   step = 5,
+    #                                   width = "220px"),
+    #                      tags$p(HTML("Max % missingness per feature (normalization):")),
+    #                      numericInput("mod6_feat_max_norm", label = NULL,
+    #                                   value = 50,
+    #                                   min = 0,
+    #                                   max = 100,
+    #                                   step = 5,
+    #                                   width = "220px"),
+    #                      tags$p(HTML("Max % missingness per sample:")),
+    #                      numericInput("mod6_filter_sample_max", label = NULL,
+    #                                   value = 100,
+    #                                   min = 0,
+    #                                   max = 100,
+    #                                   step = 5,
+    #                                   width = "220px"),
+    #                      tags$p(HTML("Sample coloring column:")),
+    #                      uiOutput("mod6_pre_sample_color_column"),
+    #                      
+    #                      tags$p(HTML("Reference sample column:")),
+    #                      uiOutput("mod6_norm"),
+    #                      
+    #                      tags$p(HTML("Reference column value:")),
+    #                      uiOutput("mod6_norm_value"),
+    #                      
+    #                      tags$p(HTML("PCA/UMAP coloring column:")),
+    #                      uiOutput("mod6_pre_pca_color_column"),
+    #                      tags$p(HTML("Heatmap annotation column:")),
+    #                      uiOutput("mod6_pre_heatmap_anno_column"),
+    #                      tags$p(HTML("Heatmap annotation row:")),
+    #                      uiOutput("mod6_pre_heatmap_anno_row"),
+    #                      tags$p(HTML("Run to see log text of data loading and preprocessing. This step may cost a few seconds to run.")),
+    #                      actionButton("mod6_go_preprocess", "Run", width = "110px"),
+    #                      
+    #                      tags$p(HTML("Reference sample column:")),
+    #                      
+    #                      
+    #                      renderUI({selectInput("mod6_reference_samp",
+    #                                            label = NULL,
+    #                                            selected = "GROUP_ID",
+    #                                            choices = names(colData(D())),
+    #                                            width = "220px")
+    #                      }),
+    #                      
+    #                      tags$p(HTML("Reference column value:")),
+    #                      renderUI({selectInput("mod6_reference_val", label = NULL,
+    #                                            choices = colData(D()) %>% as.data.frame() %>%
+    #                                              dplyr::select(input$mod2_reference_samp) %>% unique() %>%
+    #                                              unlist() %>% as.character(),width = "220px" )
+    #                      })
+    #                      
+    #                      
+    #                  ),
+    #                  
+    #                  tags$hr(),
+    #                  
+    #                  box(solidHeader = T, collapsible = T, collapsed = T,
+    #                      title="Differential Analysis", width = "220px",
+    #                      tags$p(HTML("Outcome variable:")),
+    #                      uiOutput("mod6_outcome"),
+    #                      checkboxInput("mod6_outcome_binary", "Binary outcome?", FALSE),
+    #                      tags$p(HTML("Type of analysis:")),
+    #                      selectInput("mod6_analysis_type", label = NULL,
+    #                                  width = "220px",
+    #                                  choices = c("lm","pearson","spearman","kendall"),
+    #                                  selected = "lm"),
+    #                      tags$p(HTML("Multiple testing correction:")),
+    #                      selectInput("mod6_mult_test_method", label = NULL,
+    #                                  width = "220px",
+    #                                  choices = c("BH","bonferroni","BY"),
+    #                                  selected = "BH"),
+    #                      tags$p(HTML("Significance threshold:")),
+    #                      numericInput("mod6_sig_threshold", label = NULL,
+    #                                   value = 0.05,
+    #                                   min = 0,
+    #                                   max = 1,
+    #                                   step = 0.01,
+    #                                   width = "220px"),
+    #                      tags$p(HTML("Pathway aggregation in barplot:")),
+    #                      uiOutput("mod6_group_col_barplot"),
+    #                      tags$p(HTML("Barplot coloring column:")),
+    #                      uiOutput("mod6_color_col_barplot"),
+    #                      tags$p(HTML("Run to see log text of data loading, preprocessing and differential analysis. This step may cost a few seconds to run.")),
+    #                      actionButton("mod6_go_differ", "Run", width = "110px")
+    #                  )
+    #                ),
+    #                
+    #                # Main panel for displaying outputs ----
+    #                mainPanel(
+    #                  id = "mod6_panel2", 
+    #                  style = "overflow-y: auto; max-height: 85vh; position: absolute; left: 28%",
+    #                  br(), 
+    #                  br(), 
+    #                  br(), 
+    #                  # Output: Data file ----
+    #                  #tags$p(HTML("Downloading SE.Rdata may cost more than one minute. Please wait for the prompt.")),
+    #                  #downloadButton("download_se", "Download result SE .Rdata"),
+    #                  br(),
+    #                  br(),
+    #                  #uiOutput("mod6_main_panel1"),
+    #                  # br(),
+    #                  #br(),
+    #                  #fluidRow(column(width = 12, uiOutput("mod6_main_panel")))
+    #                  uiOutput("mod6_main_panel")
+    #                  
+    #                )
+    #              )
+    #            )
+    #          )
+    # ),
+    # 
     # Define layout of Pre-processing (coded as mod2) ----------------------------------------------------
     tabPanel(HTML(paste("Pre-processing")), 
              # Sidebar layout with input and output definitions ----
@@ -681,52 +702,52 @@ ui <- fluidPage(
                  
                )
              )
-    ),
+    )
     
     # # Define layout of Module-All Results Explorer(coded as mod1) ----------------------------------------------------
     
-    tabPanel(HTML(paste("All Results", "Explorer", sep = "<br/>")),
-             sidebarLayout(
-               sidebarPanel(id = "mod1_panel1",
-                            # sidebar auto-scrolling with main panel
-                            style = "margin-left: -25px; margin-top: 45px; margin-bottom: 5px; position:fixed; width: 20%; height: 100%;",
-                            tags$p(
-                              HTML("<b>All Results Explorer Module</b> extracts all the result objects one at a time."
-                              )),
-                            tags$p(
-                              HTML("Users can assess results in a drop-down menu that offers a list of a stat_name and a plot type (e.g. “missingness”, “pval”)."
-                              )),
-                            br(),
-                            # select plot type or stats table
-                            radioButtons("mod1_radio", "Select output type:",
-                                         choices = list("Plot" = "plots",
-                                                        "Table" = "stats"),
-                                         selected = "stats"
-                            ),
-                            br(),
-                            # define one UI object to select stat_name
-                            uiOutput("mod1_select_statname_ui"),
-                            br(),
-                            # define one UI object to select output type
-                            uiOutput("mod1_select_object_ui"),
-                            br(),
-                            tags$p(
-                              HTML("<b>Hint:<br></b>Outputs are delayed untill you click 'UPDATE' button after selection. Some plots such as box plot or multiple plots may take dozens of seconds to show up."
-                              )),
-                            # delay the output
-                            actionButton("mod1_go", "Update")
-               ),
-               mainPanel(id = "mod1_panel2",
-                         # scrollable panel
-                         style = "overflow-y: auto; position: absolute; left: 25%",
-                         br(),
-                         br(),
-                         br(),
-                         # dynamic number of plots
-                         uiOutput('mod1_output')
-               )
-             )
-    )
+    # tabPanel(HTML(paste("All Results", "Explorer", sep = "<br/>")),
+    #          sidebarLayout(
+    #            sidebarPanel(id = "mod1_panel1",
+    #                         # sidebar auto-scrolling with main panel
+    #                         style = "margin-left: -25px; margin-top: 45px; margin-bottom: 5px; position:fixed; width: 20%; height: 100%;",
+    #                         tags$p(
+    #                           HTML("<b>All Results Explorer Module</b> extracts all the result objects one at a time."
+    #                           )),
+    #                         tags$p(
+    #                           HTML("Users can assess results in a drop-down menu that offers a list of a stat_name and a plot type (e.g. “missingness”, “pval”)."
+    #                           )),
+    #                         br(),
+    #                         # select plot type or stats table
+    #                         radioButtons("mod1_radio", "Select output type:",
+    #                                      choices = list("Plot" = "plots",
+    #                                                     "Table" = "stats"),
+    #                                      selected = "stats"
+    #                         ),
+    #                         br(),
+    #                         # define one UI object to select stat_name
+    #                         uiOutput("mod1_select_statname_ui"),
+    #                         br(),
+    #                         # define one UI object to select output type
+    #                         uiOutput("mod1_select_object_ui"),
+    #                         br(),
+    #                         tags$p(
+    #                           HTML("<b>Hint:<br></b>Outputs are delayed untill you click 'UPDATE' button after selection. Some plots such as box plot or multiple plots may take dozens of seconds to show up."
+    #                           )),
+    #                         # delay the output
+    #                         actionButton("mod1_go", "Update")
+    #            ),
+    #            mainPanel(id = "mod1_panel2",
+    #                      # scrollable panel
+    #                      style = "overflow-y: auto; position: absolute; left: 25%",
+    #                      br(),
+    #                      br(),
+    #                      br(),
+    #                      # dynamic number of plots
+    #                      uiOutput('mod1_output')
+    #            )
+    #          )
+    # )
     
     
     
@@ -753,8 +774,9 @@ server <- function(input, output,session) {
   categories <- reactiveValues(sheet1 = "assay", sheet2 = "assay", sheet3 = "assay")
   sheet_list <- reactiveVal()
   D_excel <- reactiveVal(NULL)
-  se_r <- reactiveVal(NULL)                     
+  se_r <- reactiveVal(NULL)
   D <- reactiveVal(NULL)
+  
   
   
   observeEvent(input$file, { 
@@ -839,7 +861,22 @@ server <- function(input, output,session) {
   
   observeEvent(input$mod0_go, {
     print("excel buton pressed")
+    
+    # Check if an Excel file is selected
+    if (is.null(input$file) || is.null(input$file$datapath)) {
+      showModal(
+        modalDialog(
+          title = "Error",
+          "No Excel file selected. Please choose an Excel file to upload.",
+          easyClose = TRUE,
+          footer = NULL
+        )
+      )
+      return()
+    }
+    
     file <- input$file$datapath
+    
     if (!is.null(file)) {
       sheet_list <- sheet_list()
       
@@ -892,6 +929,8 @@ server <- function(input, output,session) {
             )
           )
           
+          D(D_excel())
+          
         },
         error = function(e) {
           showModal(
@@ -910,70 +949,141 @@ server <- function(input, output,session) {
   })
   
   
-  # Function to generate SE object from the uploaded R file
-  #generateSEObject <- function(file_path) {
-  #  file_content <- readLines(file_path)
-  #  print("whyyyy")
-  #  se <- readRDS(file_path)
+ #original code for rds
+  # tryCatch({
+  #   # Reactive expression for storing the SE object
+  #   se_r <- eventReactive(input$mod0_go_R, {
+  #     
+  #     print("new press")
+  #     # Check if an RDS file is selected
+  #   if (is.null(input$se_file) || is.null(input$se_file$datapath)) {
+  #     showModal(
+  #       modalDialog(
+  #         title = "Error",
+  #         "No RDS file selected. Please choose an RDS file to upload.",
+  #         easyClose = TRUE,
+  #         footer = NULL
+  #       )
+  #     )
+  #     return(NULL)
+  #   }
+  #     #req(input$se_file)
+  #     file <- input$se_file
+  #     file_path <- file$datapath
+  #     se <- readRDS(file_path)
+  #     #se2 <- readRDS("se_object.rds")
+  #     #output$mod0_assay_display <- renderPrint(assay(se2))
+  #     
+  #     showModal(
+  #       modalDialog(
+  #         title = "Success",
+  #         "SE object was created successfully. Please proceed to the next steps of the pipeline in the Navigation Bar.",
+  #         easyClose = TRUE,
+  #         footer = NULL
+  #       )
+  #     )
+  #     D(se)
+  #     return(se)
+  #   })
+  # },
+  # error = function(e) {
+  #   showModal(
+  #     modalDialog(
+  #       title = "Error",
+  #       "SE object was not created successfully. Please check your raw data again.",
+  #       easyClose = TRUE,
+  #       footer = NULL
+  #     )
+  #   )
+  # }
+  # )
+  # 
   
-  #  return(se)
-  #}
-  tryCatch({
-    # Reactive expression for storing the SE object
-    se_r <- eventReactive(input$mod0_go_R, {
-      #req(input$se_file)
-      file <- input$se_file
-      file_path <- file$datapath
-      se <- readRDS(file_path)
-      #se2 <- readRDS("se_object.rds")
-      #output$mod0_assay_display <- renderPrint(assay(se2))
-      
+  observeEvent(input$mod0_go_R, {
+    
+    print("new press")
+    # Check if an RDS file is selected
+    if (is.null(input$se_file) || is.null(input$se_file$datapath)) {
       showModal(
         modalDialog(
-          title = "Success",
-          "SE object was created successfully. The assay data is printed for your reference. Please proceed to the next steps of the pipeline in the Navigation Bar.",
+          title = "Error",
+          "No RDS file selected. Please choose an RDS file to upload.",
           easyClose = TRUE,
           footer = NULL
         )
       )
-      return(se)
-    })
-  },
-  error = function(e) {
+      return(NULL)
+    }
+    #req(input$se_file)
+    file <- input$se_file
+    file_path <- file$datapath
+    se <- readRDS(file_path)
+    #se2 <- readRDS("se_object.rds")
+    #output$mod0_assay_display <- renderPrint(assay(se2))
+    
     showModal(
       modalDialog(
-        title = "Error",
-        "SE object was not created successfully. Please select the sheets from the dropdown again.",
+        title = "Success",
+        "SE object was created successfully. Please proceed to the next steps of the pipeline in the Navigation Bar.",
         easyClose = TRUE,
         footer = NULL
       )
     )
-  }
-  )
-  
-  # Print the dimensions of the SE object
-  #observe({
-  #  print(dim(se_r()))
-  #})
-  
-  # Final variable to store the SE object
-  D <- reactive({
-    if (!is.null(D_excel())) {
-      print("excel uploaded")
-      D_excel()  # Use SE object from Excel file if it exists
-    } else if (!is.null(se_r())) {
-      print("R uploaded")
-      se_r()  # Use SE object from R file if it exists
-    } else {
-      NULL  # Default value if no SE object is available
-    }
+    se_r(se)
+    D(se_r())
+    
   })
+  
+  
+  
+ 
+  # Final variable to store the SE object
+  # D <- reactive({
+  #   if (!is.null(D_excel())) {
+  #     print("excel uploaded")
+  #     D_excel()  # Use SE object from Excel file if it exists
+  #   } else if (!is.null(se_r())) {
+  #     print("R uploaded")
+  #     se_r()  # Use SE object from R file if it exists
+  #   } 
+  #   else {
+  #     NULL  # Default value if no SE object is available
+  #   }
+  # })
+  
+  se_demo <- reactiveVal(NULL) 
+  
+  
+  #se_r2 <- reactiveVal(NULL) 
+  observeEvent(input$load_demo, {
+    print("demo pressed")
+    
+    file_path <- "simulated_object.rds"
+    se <- readRDS(file_path)
+    
+    showModal(
+      modalDialog(
+        title = "Success",
+        "SE object was created successfully. Please proceed to the next steps of the pipeline in the Navigation Bar.",
+        easyClose = TRUE,
+        footer = NULL
+      )
+    )
+    
+    D_excel(NULL)
+    #se_r(NULL)
+    se_demo(se) # Update the reactiveVal
+    print(names(colData(se_demo())))
+    D(se_demo())
+  })
+  
+  
   
   # Print the dimensions of the final SE object
   observe({
-    if (!is.null(D())) {
-      print(dim(D()))
-    }
+    
+    print(dim(D()))
+    
   })
   
   
@@ -2068,6 +2178,7 @@ server <- function(input, output,session) {
         
         # Save the Plotly plot to a temporary file
         output_file <- basename(file)
+        saveWidget(as_widget(session_store$mod5_plotly), file, selfcontained = TRUE)
         saveWidget(as_widget(session_store$mod5_plotly), output_file, selfcontained = TRUE)
         
         
@@ -2350,6 +2461,7 @@ server <- function(input, output,session) {
       tryCatch({
         
         new_file <- basename(file)
+        saveWidget(as_widget(session_store$mod3_plotly), file, selfcontained = TRUE)
         saveWidget(as_widget(session_store$mod3_plotly), new_file, selfcontained = TRUE)
         
         

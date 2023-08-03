@@ -2726,19 +2726,20 @@ DT::datatable(enrichment_results, rownames = FALSE)
   }
   
   # Add the Plotly plot using an iframe with the file path of the downloaded plot
-  out(glue::glue("```{{=html}}
-<iframe src='{plotly_file_path}' height='600px' width='1000px'></iframe>
-```"))
+  if (!is.null(plotly_file_path)) {
+    out(glue::glue("```{{=html}}
+  <iframe src='{plotly_file_path}' height='600px' width='1000px'></iframe>
+  ```"))
+  }
 
 
-  out(glue::glue("```{{=html}}
-<iframe src='{mod3_file_path}' height='600px' width='1000px'></iframe>
-```"))
+  if (!is.null(mod3_file_path)) {
+    out(glue::glue("```{{=html}}
+  <iframe src='{mod3_file_path}' height='600px' width='1000px'></iframe>
+  ```"))
+  }
 
-#   out(glue::glue("```{{=html}}
-# {plotly_file_path()}
-# {mod3_file_path()}
-# ```"))
+
   
   # clean up
   close(h)
