@@ -80,7 +80,7 @@ ui <- fluidPage(
     title = div(img(src='logo.png',
                     style="float:left; margin-top: 5px; padding-right:20px;padding-bottom:5px",
                     height = 60),
-                tags$a("Krumsiek Lab", href="https://github.com/krumsieklab/maplet-shiny", style="color: White"),
+                tags$a("Shiny interface: Suhre Lab", style="color: White; font-size: 15pt; margin-bottom:50px"),
                 
                 tags$script(HTML("var header = $('.navbar > .container-fluid');header.append('<div style=\"float:right\"><a href=\"https://weill.cornell.edu\"><img src=\"wcm2.png\" alt=\"logo\" style=\"float:right;height:50px;margin-top: 10px; padding-right:1px; \"> </a></div>');console.log(header)")),
                 windowTitle = "Maplet"),
@@ -90,13 +90,35 @@ ui <- fluidPage(
     # Define layout of Uploading Data(coded as mod0) ----------------------------------------------------
     tabPanel(HTML(paste("About")),
              mainPanel(id = "about_panel", 
-                        
-                       style = "overflow-y: auto; position: absolute; left: 25%",
-                       
 
-                       tags$p(HTML("The following people have made significant contributions to the development of maplet:
-                       Kelsey Chetnik, Elisa Benedetti, Daniel P. Gomari, Annalise Schweickart, Richa Batra, Mustafa Buyukozkan, Zeyu Wang, 
-                                          Matthias Arnold, Jonas Zierer, Karsten Suhre, and Jan Krumsiek."))
+                       style = "overflow-y: auto; position: absolute; left: 25%; padding-top: 40px;",
+                       HTML("<br>"),
+                       HTML("<br>"),
+                       HTML("<h3>About maplet</h3>"),
+                       HTML("<p>Welcome to maplet, a Shiny app developed by the Krumsiek Lab.</p>"),
+                       HTML("<p>maplet is an R package for statistical data analysis with a special focus on metabolomics datasets. It allows users to create self-contained analytical pipelines. The toolbox builds upon the bioconductor package SummarizedExperiment (SE), which serves as a central repository for each pipeline’s data, analysis steps, and results. maplet provides a suite of functions for interacting with this container including but not limited to data 
+                            loading, annotation, statistical analysis, visualization, and reporting. This is the link for the github repository of Maplet: <a href='https://github.com/krumsieklab/maplet' target='_blank'>maplet</a> </p>"),
+                       HTML("<h3>Core Contributors</h3>"),
+                       HTML("<ul>
+                            <li>Kelsey Chetnik - <a href='mailto:john@example.com'>john@example.com</a></li>
+                            <li>Elisa Benedetti - <a href='mailto:jane@example.com'>jane@example.com</a></li>
+                            <li>Daniel P. Gomari - <a href='mailto:jane@example.com'>jane@example.com</a></li>
+                            <li>Annalise Schweickart - <a href='mailto:jane@example.com'>jane@example.com</a></li>
+                            <li>Richa Batra - <a href='rib4003@med.cornell.edu'>rib4003@med.cornell.edu</a></li>
+                            <li>Mustafa Buyukozkan - <a href='mailto:jane@example.com'>jane@example.com</a></li>
+                            <li>Zeyu Wang - <a href='mailto:jane@example.com'>jane@example.com</a></li>
+                            <li>Matthias Arnold - <a href='mailto:jane@example.com'>jane@example.com</a></li>
+                            <li>Jonas Zierer - <a href='mailto:jane@example.com'>jane@example.com</a></li>
+                            <li>Nisha Stephan - <a href='mailto:nis2034@qatar-med.cornell.edu'>nis2034@qatar-med.cornell.edu</a></li>
+                            <li>Malika Dixit - <a href='mailto:mdi4011@qatar-med.cornell.edu'>mdi4011@qatar-med.cornell.edu</a></li>
+                            <li>Karsten Suhre - <a href='mailto:kas2049@qatar-med.cornell.edu'>kas2049@qatar-med.cornell.edu</a></li>
+                            <li>Jan Krumsiek - <a href='mailto:jak2043@med.cornell.edu'>jak2043@med.cornell.edu</a></li>
+                            
+                            <!-- Add more developers here -->
+                        </ul>"),
+
+
+                       
                        
                        
              )
@@ -660,7 +682,7 @@ ui <- fluidPage(
                      tags$hr(),
                      box(solidHeader = T, collapsible = T, collapsed = T,
                          title="Pathway Enrichment", width = "220px",
-                         tags$p(HTML("Outcome variable:")),
+                         tags$p(HTML("Outcome variable (Must have binary values:")),
                          uiOutput("mod7_outcome_path_enrich"),
                          tags$p(HTML("rowData column to use for pathway fetching. Hint: The selected column must contain HMDB metabolite
                       identifiers")),
@@ -3162,14 +3184,23 @@ server <- function(input, output,session) {
       "Example_Pipeline_Metabolite_Analysis.html"
     },
     content = function(file) {
-      # Call mt_reporting_html and save the report with the specified filename
-      #D_merged <- mt_load_merge_se(D1 = D_differ_tab_diff(), id_col1="sample", D2=D_differ_tab_corr(), id_col2="sample",crash_on_duplicate = F)
-      mt_reporting_html_new(D_report(), file = file, 
-                            title = "Example Pipeline - Statistical Analysis",
-                            enrichment_results = metadata(D_final_enrich())$pathways$enrichment_results,
-                            plotly_file_path = mod5_plotly_url(),
-                            mod3_file_path = mod3_plotly_url())
       
+      tryCatch({
+        # Call mt_reporting_html and save the report with the specified filename
+        #D_merged <- mt_load_merge_se(D1 = D_differ_tab_diff(), id_col1="sample", D2=D_differ_tab_corr(), id_col2="sample",crash_on_duplicate = F)
+        mt_reporting_html_new(D_report(), file = file, 
+                              title = "Example Pipeline - Statistical Analysis",
+                              enrichment_results = metadata(D_final_enrich())$pathways$enrichment_results,
+                              plotly_file_path = mod5_plotly_url(),
+                              mod3_file_path = mod3_plotly_url())
+      }, error = function(e) {
+        # Handle the error here
+        # You can show a notification or error message to the user
+        showNotification("Please go through all the steps of this tab to successfully download the report.", type = "error")
+        # You can also print the error message to the console for debugging purposes
+        print(paste("Error in downloadHandler:", "Please go through all the steps of this tab to successfully download the report."))
+      })
+        
       
       
       
