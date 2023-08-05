@@ -687,6 +687,8 @@ ui <- fluidPage(
                      tags$hr(),
                      box(solidHeader = T, collapsible = T, collapsed = T,
                          title="Pathway Enrichment", width = "220px",
+                         tags$p(HTML("Make sure to log-tranform the data in the Normalization section")),
+                         tags$br(),
                          tags$p(HTML("Outcome variable (Must have binary values:")),
                          uiOutput("mod7_outcome_path_enrich"),
                          tags$p(HTML("rowData column to use for pathway fetching. Hint: The selected column must contain HMDB metabolite
