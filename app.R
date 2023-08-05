@@ -80,8 +80,10 @@ ui <- fluidPage(
     title = div(img(src='logo.png',
                     style="float:left; margin-top: 5px; padding-right:20px;padding-bottom:5px",
                     height = 60),
-                tags$a("Shiny interface: Suhre Lab", style="color: White; font-size: 15pt; margin-bottom:50px"),
-                
+                div(
+                  tags$a("Shiny interface: Suhre Lab", style="color: White; font-size: 15pt; position: relative; top: -10px;"),
+                  tags$a("Krumsiek Lab", style="color: White; font-size: 15pt; position: relative; top: -45px;")
+                ),
                 tags$script(HTML("var header = $('.navbar > .container-fluid');header.append('<div style=\"float:right\"><a href=\"https://weill.cornell.edu\"><img src=\"wcm2.png\" alt=\"logo\" style=\"float:right;height:50px;margin-top: 10px; padding-right:1px; \"> </a></div>');console.log(header)")),
                 windowTitle = "Maplet"),
     # sticky tabs while scrolling main panel
@@ -98,7 +100,12 @@ ui <- fluidPage(
                        HTML("<p>Welcome to maplet, a Shiny app developed by the Krumsiek Lab.</p>"),
                        HTML("<p>maplet is an R package for statistical data analysis with a special focus on metabolomics datasets. It allows users to create self-contained analytical pipelines. The toolbox builds upon the bioconductor package SummarizedExperiment (SE), which serves as a central repository for each pipeline’s data, analysis steps, and results. maplet provides a suite of functions for interacting with this container including but not limited to data 
                             loading, annotation, statistical analysis, visualization, and reporting. This is the link for the github repository of Maplet: <a href='https://github.com/krumsieklab/maplet' target='_blank'>maplet</a> </p>"),
-                       HTML("<h3>Core Contributors</h3>"),
+                       HTML("<h3>Maplet Shiny App Developers</h3>"),
+                       HTML("<ul>
+                            <li>Nisha Stephan - <a href='mailto:nis2034@qatar-med.cornell.edu'>nis2034@qatar-med.cornell.edu</a></li>
+                            <li>Malika Dixit - <a href='mailto:mdi4011@qatar-med.cornell.edu'>mdi4011@qatar-med.cornell.edu</a></li>
+                            </ul>"),
+                       HTML("<h3>Core Contributors to Maplet</h3>"),
                        HTML("<ul>
                             <li>Kelsey Chetnik - <a href='mailto:john@example.com'>john@example.com</a></li>
                             <li>Elisa Benedetti - <a href='mailto:jane@example.com'>jane@example.com</a></li>
@@ -109,8 +116,6 @@ ui <- fluidPage(
                             <li>Zeyu Wang - <a href='mailto:jane@example.com'>jane@example.com</a></li>
                             <li>Matthias Arnold - <a href='mailto:jane@example.com'>jane@example.com</a></li>
                             <li>Jonas Zierer - <a href='mailto:jane@example.com'>jane@example.com</a></li>
-                            <li>Nisha Stephan - <a href='mailto:nis2034@qatar-med.cornell.edu'>nis2034@qatar-med.cornell.edu</a></li>
-                            <li>Malika Dixit - <a href='mailto:mdi4011@qatar-med.cornell.edu'>mdi4011@qatar-med.cornell.edu</a></li>
                             <li>Karsten Suhre - <a href='mailto:kas2049@qatar-med.cornell.edu'>kas2049@qatar-med.cornell.edu</a></li>
                             <li>Jan Krumsiek - <a href='mailto:jak2043@med.cornell.edu'>jak2043@med.cornell.edu</a></li>
                             
