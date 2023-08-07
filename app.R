@@ -84,7 +84,7 @@ ui <- fluidPage(
                   tags$a("Shiny interface: Suhre Lab", style="color: White; font-size: 15pt; position: relative; top: -10px;"),
                   tags$a("Krumsiek Lab", style="color: White; font-size: 15pt; position: relative; top: -45px;")
                 ),
-                tags$script(HTML("var header = $('.navbar > .container-fluid');header.append('<div style=\"float:right\"><a href=\"https://weill.cornell.edu\"><img src=\"wcm2.png\" alt=\"logo\" style=\"float:right;height:80px;margin-top: 10px; padding-right:1px; width:150px;\"> </a></div>');console.log(header)")),
+                tags$script(HTML("var header = $('.navbar > .container-fluid');header.append('<div style=\"float:right\"><a href=\"https://weill.cornell.edu\"><img src=\"wcm2.png\" alt=\"logo\" style=\"float:right;height:70px;margin-top: 5px; padding-right:1px; width:200px;\"> </a></div>');console.log(header)")),
                 windowTitle = "Maplet"),
     # sticky tabs while scrolling main panel
     position = c("fixed-top"), 
@@ -138,9 +138,9 @@ ui <- fluidPage(
                               HTML("<b>Hint:<br></b>Please upload an excel file which with 3 sheets containing assay data, 
                               rowData and colData each OR Please upload an rds file which contains an SE object to be used in the 
                               rest of the pipeline."
-                                   
                               )),
-                            br(),
+                            downloadButton("sample_excel", "See sample input excel file"),
+
                             
                             fileInput("file", "Upload Excel File", accept = c(".xlsx", ".xls")), 
                             # delay the output
@@ -157,7 +157,6 @@ ui <- fluidPage(
                             tags$p(
                               HTML("For a demo of how the application works with sample data, click the below button."
                               )),
-                            br(),
                             actionButton("load_demo", "LOAD DEMO"),
                             tags$p(
                               HTML("<b>Hint:<br></b>Outputs are delayed untill you click 'Upload' button after selection."
@@ -718,12 +717,12 @@ ui <- fluidPage(
                      #fluidRow(column(width = 12, uiOutput("mod7_main_panel")))
                      uiOutput("mod7_main_panel_1"),
                      
-                     withSpinner(uiOutput("mod7_main_panel_graph1")),
+                     withSpinner(uiOutput("mod7_main_panel_graph1"),type = 3, color.background = "#f7f7f7"),
                      br(),
-                     withSpinner(uiOutput("mod7_main_panel_graph2")),
+                     withSpinner(uiOutput("mod7_main_panel_graph2")),type = 3, color.background = "#f7f7f7",
                      
                      br(),
-                     withSpinner(uiOutput("mod7_main_panel_graph3")),
+                     withSpinner(uiOutput("mod7_main_panel_graph3"),type = 3, color.background = "#f7f7f7"),
                     
                      DTOutput("mod7_main_panel_2")
                    )
@@ -778,7 +777,10 @@ ui <- fluidPage(
     #          )
     # )
     
-    
+    # Add a footer with the same color as the navbar and white text
+    div(style = "background-color: #337ab7; color: white; padding: 10px; text-align: center;",
+        "Sample Footer Text")
+  
     
   )
 )
@@ -788,6 +790,21 @@ ui <- fluidPage(
 ################################################################################
 
 server <- function(input, output,session) {
+  
+  #download sample excel file
+  output$sample_excel <- downloadHandler(
+    filename = function() {
+      paste("Sample_input_excel.xlsx")  # Name of the file to be downloaded
+    },
+    content = function(file) {
+      # Path to the sample Excel file
+      sample_excel_path <- 'D_Olink_new.xlsx'  # Update this with the correct path
+      
+      # Copy the sample Excel file to the download destination
+      file.copy(sample_excel_path, file)
+    }
+  )
+        
   
   # Declare global variables
   
@@ -1656,7 +1673,7 @@ server <- function(input, output,session) {
             len_j <- length(pmissing_list$value[[i]])
             lapply(1:len_j, function(j) {
               plotname <- paste("Plot", i, j, sep = "")
-              plotOutput(plotname) %>% withSpinner()
+              plotOutput(plotname) %>% withSpinner(type = 3, color.background = "#f7f7f7")
             })
           })
         })
@@ -1713,7 +1730,7 @@ server <- function(input, output,session) {
     
       pimpute_list$value <- get_plots_SE_preprocess(D_impute(), title = c("Original","After imputation"))
       pimpute_list$length <-  pimpute_list$value %>% length()
-      
+      print(pimpute_list$length)
       # Update D_for_analysis
       D_for_analysis(D_impute())
       
@@ -1734,7 +1751,7 @@ server <- function(input, output,session) {
               plotname <- paste("Plot", i,j, sep="")
               #print(paste0("The value of my variable from UI is ", plotname))
               
-              plotOutput(plotname) %>% withSpinner()
+              plotOutput(plotname) %>% withSpinner(type = 3, color.background = "#f7f7f7")
               
             })
           })
@@ -1984,62 +2001,126 @@ server <- function(input, output,session) {
   }) 
   
   #Filtration section
-  
   observeEvent(input$mod2_go_filter, {
-    if (input$mod2_choice_filter == "mod2_row") {
-      selected_values <- input$mod2_filter_row
+    
+    tryCatch({
       
-      # Construct logical expression based on selected values
-      filter_expr <- paste0("rowData(D())$", input$mod2_feat1_select, " %in% c(", paste0("'", selected_values, "'", collapse = ","), ")")
+      pnorm_list$value <- get_plots_SE_preprocess(D_filter(), title = c("Original","After filtration"))
+      pnorm_list$length <-  pnorm_list$value %>% length()
       
-      # Evaluate the filter expression
-      D_filter(mt_modify_filter_features(D = D_for_analysis(),
-                                         filter = eval(parse(text = filter_expr))))
+      print(pnorm_list$length)
       
-      if (identical(D_filter, D_for_analysis())) {
-        # Filtration unsuccessful
-        showModal(modalDialog(
-          title = "Filtration Unsuccessful",
-          "No features were filtered based on the selected criteria.",
-          easyClose = TRUE
-        ))
-      } else {
-        # Filtration successful
+      # Update D_for_analysis
+      D_for_analysis(D_filter())
+      
+      
+      output$mod2_main_panel  <- renderUI({
+        
+        
+        
+        mod2_output_plotlist <-   lapply(1: pnorm_list$length, function(i){
+          local({
+            len_j <- length(pnorm_list$value[[i]])
+            lapply(1:(len_j), function(j) {
+              
+              plotname <- paste("Plot", i,j, sep="")
+              #print(paste0("The value of my variable from UI is ", plotname))
+              
+              plotOutput(plotname)
+              
+            })
+          })
+          
+          
+        })
+        
+        do.call(tagList, mod2_output_plotlist)
+        
+      })
+      
+      lapply(1: pnorm_list$length, function(i){
+        local({
+          
+          len_j <- length(pnorm_list$value[[i]])
+          
+          lapply(1:(len_j), function(j) {
+            
+            plotname <- paste("Plot", i,j, sep="")
+            
+            output[[paste("Plot", i,j, sep="")]] <-
+              renderPlot({
+                #grid.force()
+                pnorm_list$value[[i]][j]
+                
+              })
+          })
+        })
+        
+      })
+    },error = function(e) {
+      # Show the error message to the user using showNotification
+      showNotification(
+        glue::glue("An error occurred: {e$message}"),
+        type = "error"
+      )
+    })
+    
+  })
+
+  
+  
+  D_filter <- reactive({
+    tryCatch({
+      D <- D_for_analysis() 
+      
+      if (input$mod2_choice_filter == "mod2_row") {
+        selected_values <- input$mod2_filter_row
+        
+        # Construct logical expression based on selected values
+        filter_expr <- paste0("rowData(D)$", input$mod2_feat1_select, " %in% c(", paste0("'", selected_values, "'", collapse = ","), ")")
+        
+        # Evaluate the filter expression
+        D <- mt_modify_filter_features(D = D,
+                                       filter = eval(parse(text = filter_expr)))
+        
         showModal(modalDialog(
           title = "Filtration Successful",
-          "Features were successfully filtered based on the selected criteria.",
+          "Samples were successfully filtered based on the selected criteria.",
           easyClose = TRUE
         ))
-      }
-    } else if (input$mod2_choice_filter == "mod2_col") {
-      selected_values <- input$mod2_filter_col
-      
-      # Construct logical expression based on selected values
-      filter_expr <- paste0("colData(D())$", input$mod2_samp1_select, " %in% c(", paste0("'", selected_values, "'", collapse = ","), ")")
-      
-      
-      # Evaluate the filter expression
-      D_filter(mt_modify_filter_samples(D = D_for_analysis(),
-                                        filter = eval(parse(text = filter_expr))))
-      
-      if (identical(D_filter, D_for_analysis())) {
-        # Filtration unsuccessful
-        showModal(modalDialog(
-          title = "Filtration Unsuccessful",
-          "No samples were filtered based on the selected criteria.",
-          easyClose = TRUE
-        ))
-      } else {
-        # Filtration successful
+      } else if (input$mod2_choice_filter == "mod2_col") {
+        selected_values <- input$mod2_filter_col
+        
+        # Construct logical expression based on selected values
+        filter_expr <- paste0("colData(D)$", input$mod2_samp1_select, " %in% c(", paste0("'", selected_values, "'", collapse = ","), ")")
+        
+        # Evaluate the filter expression
+        D <- mt_modify_filter_samples(D = D,
+                                      filter = eval(parse(text = filter_expr)))
+        
         showModal(modalDialog(
           title = "Filtration Successful",
           "Samples were successfully filtered based on the selected criteria.",
           easyClose = TRUE
         ))
       }
-    }
-    
+      
+      # Return the filtered and modified D
+      D %>% 
+        mt_plots_sample_boxplot(color = !!sym(input$pre_sample_color_column_mod2),
+                                title = "After filtration", plot_logged = TRUE)
+      
+    }, error = function(e) {
+      # Handle the error here
+      # You can show a notification or error message to the user
+      showNotification(e$message, type = "error")
+      # You can also print the error message to the console for debugging
+      print(paste("Error:", e))
+      # Return NULL to indicate no valid result
+      NULL
+    })
   })
+  
   
   # Retrieve the last available SE object for further analysis
   #D_for_analysis <- reactive({
