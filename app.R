@@ -84,7 +84,7 @@ ui <- fluidPage(
                   tags$a("Shiny interface: Suhre Lab", style="color: White; font-size: 15pt; position: relative; top: -10px;"),
                   tags$a("Krumsiek Lab", style="color: White; font-size: 15pt; position: relative; top: -45px;")
                 ),
-                tags$script(HTML("var header = $('.navbar > .container-fluid');header.append('<div style=\"float:right\"><a href=\"https://weill.cornell.edu\"><img src=\"wcm2.png\" alt=\"logo\" style=\"float:right;height:50px;margin-top: 10px; padding-right:1px; \"> </a></div>');console.log(header)")),
+                tags$script(HTML("var header = $('.navbar > .container-fluid');header.append('<div style=\"float:right\"><a href=\"https://weill.cornell.edu\"><img src=\"wcm2.png\" alt=\"logo\" style=\"float:right;height:80px;margin-top: 10px; padding-right:1px; width:150px;\"> </a></div>');console.log(header)")),
                 windowTitle = "Maplet"),
     # sticky tabs while scrolling main panel
     position = c("fixed-top"), 
