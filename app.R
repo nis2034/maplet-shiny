@@ -76,7 +76,7 @@ ui <- fluidPage(
                             height: 80px;
                             }'))),
   navbarPage(
-    # embed Maplet logo and title
+    
     title = div(img(src='logo.png',
                     style="float:left; margin-top: 5px; padding-right:20px;padding-bottom:5px",
                     height = 60),
@@ -120,7 +120,7 @@ ui <- fluidPage(
                             <li>Jan Krumsiek - <a href='mailto:jak2043@med.cornell.edu'>jak2043@med.cornell.edu</a></li>
                             
                             <!-- Add more developers here -->
-                        </ul>"),
+                        </ul>")
 
 
                        
@@ -732,6 +732,7 @@ ui <- fluidPage(
              )
     )
     
+    
     # # Define layout of Module-All Results Explorer(coded as mod1) ----------------------------------------------------
     
     # tabPanel(HTML(paste("All Results", "Explorer", sep = "<br/>")),
@@ -777,12 +778,16 @@ ui <- fluidPage(
     #          )
     # )
     
-    # Add a footer with the same color as the navbar and white text
-    div(style = "background-color: #337ab7; color: white; padding: 10px; text-align: center;",
-        "Sample Footer Text")
+   
   
     
+  ),
+  tags$footer(
+    style = "background-color: #B31B1B; color: white; padding: 10px; text-align: center; position: absolute; bottom: 0; width: 100%;
+    padding-bottom: 30px; padding: 10px;",
+    tags$strong("Weill Cornell Medicine")
   )
+  
 )
 
 ################################################################################
